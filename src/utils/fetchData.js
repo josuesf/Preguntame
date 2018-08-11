@@ -9,7 +9,7 @@ module.exports = {
             },
             body: JSON.stringify(params)
         }
-        fetch('http://192.168.1.5:8000' + url, parametros)
+        fetch('http://omaralex.pythonanywhere.com' + url, parametros) //http://192.168.1.5:8000
             .then((response) => response.json())
             .then((responseJson) => {
                 console.log(responseJson)
@@ -33,7 +33,7 @@ module.exports = {
             },
             body: JSON.stringify(params)
         }
-        const response = await fetch('http://192.168.1.5:8000'+url,parametros);
+        const response = await fetch('http://omaralex.pythonanywhere.com'+url,parametros);
         const json = await response.json();
         callback(json)
     }

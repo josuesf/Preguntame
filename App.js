@@ -15,18 +15,21 @@ class Main extends Component {
   constructor(props) {
     super(props);
     if (!global.socket)
-      global.socket = SocketIOClient('http://192.168.1.5:3000');
+      global.socket = SocketIOClient('https://que5node.herokuapp.com/');
     this.state = {
       senderId: appConfig.senderID
     };
+    global.socket.on('connect', () => {
+      console.log('Wahey -> connected!');
+    });
     global.currentScreen = 'Main'
     this.notif = new NotifService(this.onRegister.bind(this), this.onNotif.bind(this));
     global.socket.off('new_message')
     global.socket.off('status_message')
     global.socket.on('new_message', (p) => {
       console.log(p)
-      let estado_mensaje = global.currentScreen==("Chat#"+p.id_e)?'visto':'entregado'
-      
+      let estado_mensaje = global.currentScreen == ("Chat#" + p.id_e) ? 'visto' : 'entregado'
+
       realm.write(() => {
         realm.create('ChatList', {
           id_r: p.id_r,
@@ -54,17 +57,17 @@ class Main extends Component {
       let msg = {}
       msg.id_mensaje = p.id_mensaje
       msg.estado_mensaje = estado_mensaje
-      global.socket.emit('status_message',msg)
-      if(global.currentScreen!="Chat#"+p.id_e){
+      global.socket.emit('status_message', msg)
+      if (global.currentScreen != "Chat#" + p.id_e) {
         this.notif.cancelAll()
         let mensajes = realm.objects('ChatList').filtered('estado_mensaje=="entregado" or estado_mensaje=="recibido"')
         let title = "Slit"
-        let mensaje = "Tienes "+mensajes.length+" mensajes"
-        if(mensajes.length==1){
+        let mensaje = "Tienes " + mensajes.length + " mensajes"
+        if (mensajes.length == 1) {
           title = p.id_e
           mensaje = mensajes[0].mensaje
         }
-        this.notif.localNotif(title,mensaje,p.id_e,"","",mensajes.length)
+        this.notif.localNotif(title, mensaje, p.id_e, "", "", mensajes.length)
       }
     });
     global.socket.on('status_message', (p) => {
