@@ -44,7 +44,20 @@ export default class Home extends Component {
     }
     componentWillUnmount(){
         //realm.removeAllListeners('change')
-        
+        let fecha =  new Date()
+        'yyyy-mm-dd HH:mm:ss'
+        var mes = fecha.getMonth()+1
+        var dia = fecha.getDate()
+        var hora = fecha.getHours()
+        var minutos = fecha.getMinutes()
+        let fechaFormat = fecha.getFullYear()+'-'+(mes>9?mes:'0'+mes)+'-'(dia>9?dia:'0'+dia)+' '(hora>9?hora:'0'+hora)+':'+(minutos>9?minutos:'0'+minutos)+':00'
+        asyncFetch('/ws/set_last_connected', 'POST', { usuario: global.username,fecha:fechaFormat }, (res) => {
+
+        })
+    }
+    recuperarNroMensajes=(id_e)=>{
+        let mensajes = realm.objects('ChatList').filtered('estado_mensaje=="entregado" AND id_e="'+id_e+'"')
+        return mensajes.length
     }
     componentDidMount(){
         realm.addListener('change', () => {
@@ -94,12 +107,12 @@ export default class Home extends Component {
                                     <View style={{ flex: 1 }}>
                                         <Text style={{ color: '#6B6B6B', fontWeight: 'bold' }}>{c.id_chat}</Text>
                                         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                        {c.id_r != usuario_propietario &&<IconMaterial size={15} color={c.estado_mensaje == "visto" ? "#70CDEB" : "#6B6B6B"} name={name_icon(c.estado_mensaje)} />}
-                                        <Text style={{ color: (c.id_r == usuario_propietario && (c.estado_mensaje!='visto'&& c.estado_mensaje!='visto_servidor')) ? '#028090' : '#6B6B6B',marginHorizontal:5 }}>{c.ultimo_mensaje}</Text>
+                                        {c.id_r != usuario_propietario &&<IconMaterial size={15} color={(c.estado_mensaje == "visto"||c.estado_mensaje == "visto_fin") ? "#70CDEB" : "#6B6B6B"} name={name_icon(c.estado_mensaje)} />}
+                                        <Text style={{ color: (c.id_r == usuario_propietario && (c.estado_mensaje!='visto' && c.estado_mensaje!='visto_fin')) ? '#028090' : '#6B6B6B',marginHorizontal:5 }}>{c.ultimo_mensaje}</Text>
                                         </View>
                                     </View>
-                                    {(c.id_r == usuario_propietario && (c.estado_mensaje!='visto'&&c.estado_mensaje!='visto_servidor')) && <View style={{ height: 20, width: 20, borderRadius: 10, backgroundColor: '#02C39A', alignItems: 'center' }}>
-                                        <Text style={{ color: '#FFF' }}>1</Text>
+                                    {(c.id_r == usuario_propietario && (c.estado_mensaje!='visto' && c.estado_mensaje!='visto_fin')) && <View style={{ height:20,width:20, borderRadius: 10,justifyContent:'center', backgroundColor: '#02C39A', alignItems: 'center' }}>
+                                        <Text style={{ color: '#FFF',padding:2 }}>{this.recuperarNroMensajes(c.id_chat)}</Text>
                                     </View>}
 
                                 </View>

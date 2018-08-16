@@ -62,6 +62,7 @@ export default class Input extends Component {
 
     renderInputText(){
         return <TextInput
+            autoCapitalize="none"
             value={this.props.value}
             style={styleInput.input}
             onFocus={this.handleFocus.bind(this)}

@@ -7,6 +7,7 @@ ChatList.schema = {
     name: 'ChatList',
     primaryKey: 'id_mensaje',
     properties: {
+        id_chat:'string',
         id_r:'string',
         id_e:'string',
         id_g:'string',
