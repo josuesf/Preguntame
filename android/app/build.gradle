@@ -108,6 +108,14 @@ android {
         }
         multiDexEnabled true
     }
+    signingConfigs {
+        release {
+            keyAlias 'josuesf_key_alias'
+            keyPassword 'josuesf'
+            storeFile file('/Users/josuesf/Documents/ReactNative/appyksim/android/app/josuesf_key.keystore')
+            storePassword 'josuesf'
+        }
+    }
     splits {
         abi {
             reset()
@@ -120,6 +128,7 @@ android {
         release {
             minifyEnabled enableProguardInReleaseBuilds
             proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
+            signingConfig signingConfigs.release
         }
     }
     // applicationVariants are e.g. debug, release
