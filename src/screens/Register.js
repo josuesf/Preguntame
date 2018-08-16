@@ -5,7 +5,7 @@ import {
     AsyncStorage
 } from 'react-native';
 import {Input, Logo, Heading, AlertStatus} from '../components';
-import { NavigationActions } from 'react-navigation'
+import { NavigationActions,StackActions } from 'react-navigation'
 import Icon from 'react-native-vector-icons/FontAwesome';
 import {getPlatformValue} from '../utils';
 import { fetchData } from '../utils/fetchData';
@@ -99,7 +99,12 @@ export default class Register extends Component {
                 AsyncStorage.setItem("USUARIO",JSON.stringify(
                     {usuario:this.state.username,email:this.state.email,password:this.state.password,token,tipo:'android'}
                 ))
-                this.props.navigation.navigate('home')
+                const resetAction = StackActions.reset({
+                    index: 0,
+                    actions: [NavigationActions.navigate({ routeName: 'main' })],
+                  });
+                this.props.navigation.dispatch(resetAction);
+                //this.props.navigation.navigate('home')
             }
         })
     }

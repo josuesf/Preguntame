@@ -1,6 +1,5 @@
 import React, { Component } from 'react';
 import { TextInput, StyleSheet, Text, View, TouchableOpacity, Alert, AsyncStorage } from 'react-native';
-import NotifService from './NotifService';
 import appConfig from './app.json';
 import { StackNavigator } from "react-navigation";
 import Chat from "./src/screens/Chat";
@@ -10,28 +9,42 @@ import Amigos from './src/screens/Amigos'
 import { asyncFetch } from './src/utils/fetchData'
 import realm from './src/bdrealm/realm'
 import SocketIOClient from 'socket.io-client';
+import FCM, { NotificationActionType } from "react-native-fcm";
+
 class Main extends Component {
 
   constructor(props) {
     super(props);
     if (!global.socket)
-      global.socket = SocketIOClient('https://que5node.herokuapp.com/');
+      global.socket = SocketIOClient('https://que5node.herokuapp.com');//http://192.168.1.6:8080 //https://que5node.herokuapp.com/
     this.state = {
       senderId: appConfig.senderID
     };
     global.socket.on('connect', () => {
       console.log('Wahey -> connected!');
+      AsyncStorage.getItem('USUARIO', (err, res) => {
+        if (err) {
+
+        } else if (res != null || res != undefined) {
+          global.username = JSON.parse(res).usuario
+          global.socket.emit('online', global.username)
+          // this.EnviarMensajesGuardados()
+        }
+      })
+    });
+    global.socket.on('disconnect', (reason) => {
+      global.socket = SocketIOClient('https://que5node.herokuapp.com');
     });
     global.currentScreen = 'Main'
-    this.notif = new NotifService(this.onRegister.bind(this), this.onNotif.bind(this));
+    
     global.socket.off('new_message')
     global.socket.off('status_message')
     global.socket.on('new_message', (p) => {
-      console.log(p)
       let estado_mensaje = global.currentScreen == ("Chat#" + p.id_e) ? 'visto' : 'entregado'
 
       realm.write(() => {
         realm.create('ChatList', {
+          id_chat: p.id_e,
           id_r: p.id_r,
           id_e: p.id_e,
           id_g: '' + p.id_g,
@@ -58,20 +71,20 @@ class Main extends Component {
       msg.id_mensaje = p.id_mensaje
       msg.estado_mensaje = estado_mensaje
       global.socket.emit('status_message', msg)
-      if (global.currentScreen != "Chat#" + p.id_e) {
-        this.notif.cancelAll()
-        let mensajes = realm.objects('ChatList').filtered('estado_mensaje=="entregado" or estado_mensaje=="recibido"')
-        let title = "Slit"
-        let mensaje = "Tienes " + mensajes.length + " mensajes"
-        if (mensajes.length == 1) {
-          title = p.id_e
-          mensaje = mensajes[0].mensaje
-        }
-        this.notif.localNotif(title, mensaje, p.id_e, "", "", mensajes.length)
-      }
+      // if (global.currentScreen != "Chat#" + p.id_e) {
+      //   this.notif.cancelAll()
+      //   let mensajes = realm.objects('ChatList').filtered('estado_mensaje=="entregado" or estado_mensaje=="recibido"')
+      //   let title = "Slit"
+      //   let mensaje = "Tienes " + mensajes.length + " mensajes"
+      //   if (mensajes.length == 1) {
+      //     title = p.id_e
+      //     mensaje = mensajes[0].mensaje
+      //   }
+      //   //this.notif.localNotif(title, mensaje, p.id_e, "", "", mensajes.length)
+      // }
     });
     global.socket.on('status_message', (p) => {
-      console.log(p)
+      // console.log(p)
       realm.write(() => {
         realm.create('ChatList', {
           id_mensaje: p.id_mensaje,
@@ -86,11 +99,30 @@ class Main extends Component {
     });
 
   }
+  EnviarMensajesGuardados() {
+    const mensajes_guardados = realm.objects('ChatList').filtered('estado_mensaje="pendiente"').sorted('timestamp')
+    for (var i = 0; i < mensajes_guardados.length; i++) {
+      var id_mensaje = mensajes_guardados[i].id_mensaje
+      global.socket.emit('new_message', mensajes_guardados[i])
+    }
+    const mensajes_recibidos = realm.objects('ChatList').filtered('estado_mensaje!="visto_fin" and id_r="' + global.username + '"').sorted('timestamp')
+    //console.log('estado_mensaje="entregado" and id_r="'+global.username+'"',mensajes_recibidos.length)
+    for (var j = 0; j < mensajes_recibidos.length; j++) {
+      var p = mensajes_recibidos[j]
+      let msg = {}
+      msg.id_mensaje = p.id_mensaje
+      msg.estado_mensaje = p.estado_mensaje
+      global.socket.emit('status_message', msg)
+    }
+  }
   componentWillMount() {
+    FCM.getFCMToken().then(token => {
+      console.log("TOKEN (getFCMToken)", token);
+      this.setState({ token: token || "" });
+    });
     AsyncStorage.getItem('USUARIO', (err, res) => {
       if (err) {
         //this.props.navigation.navigate('register', { token:this.state.registerToken })
-        this.notif.configure(this.onRegister.bind(this), this.onNotif.bind(this), this.state.senderId)
       } else if (res != null || res != undefined) {
         global.username = JSON.parse(res).usuario
         global.socket.emit('online', global.username)
@@ -103,8 +135,10 @@ class Main extends Component {
 
 
             for (let p of pendientes) {
+              let estado_mensaje = global.currentScreen == ("Chat#" + p.id_e) ? 'visto' : 'entregado'
               realm.write(() => {
                 realm.create('ChatList', {
+                  id_chat: p.id_e,
                   id_r: p.id_r,
                   id_e: p.id_e,
                   id_g: '' + p.id_g,
@@ -112,7 +146,7 @@ class Main extends Component {
                   mensaje: p.mensaje,
                   tipo_mensaje: p.tipo_mensaje,
                   timestamp: p.timestamp,
-                  estado_mensaje: 'recibido',
+                  estado_mensaje: estado_mensaje,
                 }, true);
                 realm.create('Chats', {
                   id_chat: p.id_e,
@@ -123,26 +157,14 @@ class Main extends Component {
                   ultimo_mensaje: p.mensaje,
                   timestamp: p.timestamp,
                   avatar: p.avatar || '',
-                  estado_mensaje: 'recibido',
+                  estado_mensaje: estado_mensaje,
                   tipo_mensaje: p.tipo_mensaje,
                 }, true);
               })
-              asyncFetch('/ws/update_status_message', 'POST',
-                { id_mensaje: p.id_mensaje, estado_mensaje: 'entregado' }, (res) => {
-                  if (res.respuesta == 'ok') {
-                    realm.write(() => {
-                      realm.create('ChatList', {
-                        id_mensaje: res.data.id_mensaje,
-                        estado_mensaje: 'entregado_servidor',
-                      }, true);
-                      let mensaje = realm.objects('Chats').filtered('id_mensaje="' + res.data.id_mensaje + '"')
-                      //console.log(mensaje[0].id_chat)
-                      if (mensaje.length > 0) {
-                        realm.create('Chats', { id_chat: mensaje[0].id_chat, estado_mensaje: 'entregado_servidor' }, true);
-                      }
-                    })
-                  }
-                })
+              let msg = {}
+              msg.id_mensaje = p.id_mensaje
+              msg.estado_mensaje = estado_mensaje
+              global.socket.emit('status_message', msg)
             }
             for (let e of entregados_vistos) {
               realm.write(() => {
@@ -156,22 +178,6 @@ class Main extends Component {
                   realm.create('Chats', { id_chat: mensaje[0].id_chat, estado_mensaje: e.estado_mensaje }, true);
                 }
               })
-              asyncFetch('/ws/update_status_message', 'POST',
-                { id_mensaje: e.id_mensaje, estado_mensaje: e.estado_mensaje + '_receptor' }, (res) => {
-                  // if (res.respuesta == 'ok') {
-                  //   realm.create('ChatList', {
-                  //     id_mensaje: res.data,
-                  //     estado_mensaje: 'entregado_servidor',
-                  //   }, true);
-                  //   let mensaje = realm.objects('Chats').filtered('id_mensaje="' + res.data + '"')
-                  //   //console.log(mensaje[0].id_chat)
-                  //   if (mensaje.length > 0) {
-                  //     realm.write(() => {
-                  //       realm.create('Chats', { id_chat: mensaje[0].id_chat, estado_mensaje: 'entregado_servidor' }, true);
-                  //     });
-                  //   }
-                  // }
-                })
             }
 
           }
@@ -179,7 +185,7 @@ class Main extends Component {
         this.props.navigation.replace('home')
       } else {
         // this.props.navigation.navigate('register', { token:this.state.registerToken })
-        this.notif.configure(this.onRegister.bind(this), this.onNotif.bind(this), this.state.senderId)
+        // this.notif.configure(this.onRegister.bind(this), this.onNotif.bind(this), this.state.senderId)
       }
 
     })
