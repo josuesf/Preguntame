@@ -9,14 +9,13 @@ import Amigos from './src/screens/Amigos'
 import { asyncFetch } from './src/utils/fetchData'
 import realm from './src/bdrealm/realm'
 import SocketIOClient from 'socket.io-client';
-import FCM, { NotificationActionType } from "react-native-fcm";
-
+import FCMModule  from './src/NativeModules/FCMModule' 
 class Main extends Component {
 
   constructor(props) {
     super(props);
     if (!global.socket)
-      global.socket = SocketIOClient('https://que5node.herokuapp.com');//http://192.168.1.6:8080 //https://que5node.herokuapp.com/
+      global.socket = SocketIOClient('http://192.168.1.6:8080');//http://192.168.1.6:8080 //https://que5node.herokuapp.com/
     this.state = {
       senderId: appConfig.senderID
     };
@@ -33,7 +32,7 @@ class Main extends Component {
       })
     });
     global.socket.on('disconnect', (reason) => {
-      global.socket = SocketIOClient('https://que5node.herokuapp.com');
+      global.socket = SocketIOClient('http://192.168.1.6:8080');
     });
     global.currentScreen = 'Main'
     
@@ -116,13 +115,10 @@ class Main extends Component {
     }
   }
   componentWillMount() {
-    FCM.getFCMToken().then(token => {
-      console.log("TOKEN (getFCMToken)", token);
-      this.setState({ token: token || "" });
-    });
+    console.log(FCMModule.TOKEN)
     AsyncStorage.getItem('USUARIO', (err, res) => {
       if (err) {
-        //this.props.navigation.navigate('register', { token:this.state.registerToken })
+        this.props.navigation.navigate('register', { token:FCMModule.TOKEN })
       } else if (res != null || res != undefined) {
         global.username = JSON.parse(res).usuario
         global.socket.emit('online', global.username)
@@ -184,7 +180,7 @@ class Main extends Component {
         })
         this.props.navigation.replace('home')
       } else {
-        // this.props.navigation.navigate('register', { token:this.state.registerToken })
+        this.props.navigation.navigate('register', { token:FCMModule.TOKEN })
         // this.notif.configure(this.onRegister.bind(this), this.onNotif.bind(this), this.state.senderId)
       }
 

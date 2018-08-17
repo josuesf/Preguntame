@@ -16,6 +16,8 @@ import {
 } from 'react-native';
 import IconMaterial from 'react-native-vector-icons/MaterialCommunityIcons';
 import realm from '../bdrealm/realm'
+import FCMModule  from '../NativeModules/FCMModule'
+import { asyncFetch,fetchNode } from '../utils/fetchData'
 export default class Home extends Component {
     static navigationOptions = {
         header: null,
@@ -35,6 +37,7 @@ export default class Home extends Component {
         
     }
     componentWillMount() {
+        console.log('Mi token',FCMModule.TOKEN)
         // realm.write(() => {
         //     let allBooks = realm.objects('Chats');
         //     realm.delete(allBooks); // Deletes all books
@@ -45,13 +48,14 @@ export default class Home extends Component {
     componentWillUnmount(){
         //realm.removeAllListeners('change')
         let fecha =  new Date()
-        'yyyy-mm-dd HH:mm:ss'
+        //'yyyy-mm-dd HH:mm:ss'
         var mes = fecha.getMonth()+1
         var dia = fecha.getDate()
         var hora = fecha.getHours()
         var minutos = fecha.getMinutes()
-        let fechaFormat = fecha.getFullYear()+'-'+(mes>9?mes:'0'+mes)+'-'(dia>9?dia:'0'+dia)+' '(hora>9?hora:'0'+hora)+':'+(minutos>9?minutos:'0'+minutos)+':00'
-        asyncFetch('/ws/set_last_connected', 'POST', { usuario: global.username,fecha:fechaFormat }, (res) => {
+        let fechaFormat = fecha.getFullYear()+'-'+(mes>9?mes:'0'+mes)+'-'+(dia>9?dia:'0'+dia)+' '+(hora>9?hora:'0'+hora)+':'+(minutos>9?minutos:'0'+minutos)+':00'
+        console.log(global.username,fechaFormat)
+        asyncFetch('/ws/set_last_connected', 'POST', { usuario: global.username,fecha:new Date() }, (res) => {
 
         })
     }
@@ -66,6 +70,7 @@ export default class Home extends Component {
                 chats: realm.objects('Chats').sorted('timestamp', true),
             })
         });
+        
     }
     render() {
         const { navigate } = this.props.navigation;

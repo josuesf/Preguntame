@@ -8,9 +8,53 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:260454566437:android:521b0e5d9de9eac5",
+        "mobilesdk_app_id": "1:260454566437:android:a4607ce9cc6a7b15",
         "android_client_info": {
           "package_name": "com.preguntame"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "260454566437-cmefkpgvc2ib1afjqvqq4rht3a9os5q8.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.preguntame",
+            "certificate_hash": "2e3af6e4450581c50807f8dc59a2b1e04fb91710"
+          }
+        },
+        {
+          "client_id": "260454566437-29pkbc5jjoflfuostbheu4i1fgr865jl.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCWmWgTiQLvByEd1KSMRaTQJxDsxTVjLt4"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "appinvite_service": {
+          "status": 2,
+          "other_platform_oauth_client": [
+            {
+              "client_id": "260454566437-29pkbc5jjoflfuostbheu4i1fgr865jl.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        },
+        "ads_service": {
+          "status": 2
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:260454566437:android:521b0e5d9de9eac5",
+        "android_client_info": {
+          "package_name": "com.que5"
         }
       },
       "oauth_client": [

@@ -20,7 +20,7 @@ import {
 } from 'react-native';
 import IconMaterial from 'react-native-vector-icons/MaterialCommunityIcons';
 import realm from '../bdrealm/realm'
-import { asyncFetch } from '../utils/fetchData'
+import { asyncFetch, fetchNode } from '../utils/fetchData'
 import AutoScroll from '../utils/AutoScroll';
 
 export default class Chat extends Component {
@@ -35,10 +35,11 @@ export default class Chat extends Component {
         this.state = {
             id_usuario: global.username,
             mensajes: [],
-            chat_con: props.navigation.state.params.usuario
+            chat_con: props.navigation.state.params.usuario,
+            estado_usuario: ''
         }
         global.currentScreen = 'Chat#' + props.navigation.state.params.usuario
-
+        global.socket.off('escribiendo')
     }
     componentDidMount() {
         realm.addListener('change', () => {
@@ -46,16 +47,38 @@ export default class Chat extends Component {
             //this.EnviarMensajesGuardados()
             //this.EnviarMensajesVistos()
         });
+        global.socket.on('escribiendo', (data) => {
+            this.setState({ estado_usuario: 'Escribiendo...' })
+            setTimeout(() => {
+                this.recuperarUltimaHora()
+            }, 3000)
+        })
+    }
+    recuperarUltimaHora = () => {
+        fetchNode('/ws/get_estado_usuario', 'POST', { id_usuario: this.props.navigation.state.params.usuario }, (res, err) => {
+            console.log(res)
+            if (!err) {
+                if (res.estado != 'en linea') {
+                    let fecha = new Date(res.estado)
+                    'yyyy-mm-dd HH:mm:ss'
+                    var mes = fecha.getMonth() + 1
+                    var dia = fecha.getDate()
+                    var hora = fecha.getHours()
+                    var minutos = fecha.getMinutes()
+                    let fechaFormat = fecha.getFullYear() + '-' + (mes > 9 ? mes : '0' + mes) + '-' + (dia > 9 ? dia : '0' + dia) + ' ' + (hora > 9 ? hora : '0' + hora) + ':' + (minutos > 9 ? minutos : '0' + minutos)
+                    this.setState({ estado_usuario: 'Ultima vez '+fechaFormat })
+                }
+                else {
+                    this.setState({ estado_usuario: res.estado })
+                }
+            }
+        })
     }
     componentWillMount() {
         this.EnviarMensajesGuardados()
         this.EnviarMensajesVistos()
         this.ActualizarMensajes()
-        asyncFetch('/ws/get_estado_usuario', 'POST', { id_usuario: this.state.chat_con }, (res) => {
-            if(res.respuesta=='ok'){
-                this.setState({estado_usuario:res.estado})
-            }
-        })
+        this.recuperarUltimaHora()
     }
     componentWillUnmount() {
         //realm.removeAllListeners('change')
@@ -67,6 +90,10 @@ export default class Chat extends Component {
             mensajes: realm.objects('ChatList').filtered('id_chat="' + chat_con + '"').sorted('timestamp', true).slice(0, 10),
             mensaje: ""
         })
+    }
+    escribirMensaje = (text) => {
+        this.setState({ mensaje: text })
+        global.socket.emit('escribiendo', { id_r: this.state.chat_con })
     }
     EnviarMensaje = () => {
         if (this.state.mensaje.length > 0) {
@@ -214,13 +241,17 @@ export default class Chat extends Component {
                     barStyle="light-content"
                 />
                 <View style={{
-                    flexDirection: 'row', alignItems: 'center', backgroundColor: '#00A896',
+                    backgroundColor: '#00A896',
                     paddingHorizontal: 16, paddingTop: 10, paddingBottom: 10
                 }}>
-                    <TouchableOpacity onPress={() => goBack()} style={{ alignItems: 'center', marginRight: 20 }}>
-                        <IconMaterial name="arrow-left" size={35} color="#F0F3BD" />
-                    </TouchableOpacity>
-                    <Text style={{ color: '#F0F3BD', fontSize: 16, fontWeight: 'bold' }}>Preguntas con {this.state.chat_con}</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                        <TouchableOpacity onPress={() => goBack()} style={{ alignItems: 'center', marginRight: 20 }}>
+                            <IconMaterial name="arrow-left" size={35} color="#F0F3BD" />
+                        </TouchableOpacity>
+                        <Text style={{ color: '#F0F3BD', fontSize: 16, fontWeight: 'bold' }}>Preguntas con {this.state.chat_con}</Text>
+                    </View>
+
+                    <Text style={{ color: '#F0F3BD', fontSize: 11, marginLeft: 60 }}>{this.state.estado_usuario}</Text>
                 </View>
                 <FlatList
                     data={mensajes}
@@ -261,7 +292,7 @@ export default class Chat extends Component {
                             style={styles.input}
                             underlineColorAndroid="transparent"
                             placeholder="Type something nice"
-                            onChangeText={(text) => this.setState({ mensaje: text })}
+                            onChangeText={(text) => this.escribirMensaje(text)}
                         />
                         <TouchableOpacity onPress={() => this.EnviarMensaje()}>
                             <Text style={styles.send}>Send</Text>

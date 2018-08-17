@@ -33,12 +33,12 @@ module.exports = {
             },
             body: JSON.stringify(params)
         }
-        fetch('http://192.168.1.6:8080' + url, parametros) //http://192.168.1.5:8000
+        fetch('http://192.168.1.6:8080' + url, parametros) // https://que5node.herokuapp.com
             .then((response) => response.json())
             .then((responseJson) => {
                 console.log(responseJson)
                 if(responseJson.respuesta=='ok'){
-                    callback(responseJson.data,undefined)
+                    callback(responseJson,undefined)
                 }else{
                     callback(undefined,responseJson.respuesta)
                 }
