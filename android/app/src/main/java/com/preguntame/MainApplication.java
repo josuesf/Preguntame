@@ -3,6 +3,8 @@ package com.preguntame;
 import android.app.Application;
 
 import com.facebook.react.ReactApplication;
+
+import io.realm.Realm;
 import io.realm.react.RealmReactPackage;
 import com.oblador.vectoricons.VectorIconsPackage;
 import com.facebook.react.ReactNativeHost;
@@ -10,6 +12,7 @@ import com.facebook.react.ReactPackage;
 import com.facebook.react.shell.MainReactPackage;
 import com.facebook.soloader.SoLoader;
 import com.preguntame.firebaseServices.FCMPackager;
+import com.preguntame.realmbd.RealmPackager;
 
 import java.util.Arrays;
 import java.util.List;
@@ -28,7 +31,8 @@ public class MainApplication extends Application implements ReactApplication {
           new MainReactPackage(),
             new RealmReactPackage(),
             new VectorIconsPackage(),
-              new FCMPackager()
+            new FCMPackager(),
+            new RealmPackager()
       );
     }
 
@@ -47,5 +51,7 @@ public class MainApplication extends Application implements ReactApplication {
   public void onCreate() {
     super.onCreate();
     SoLoader.init(this, /* native exopackage */ false);
+    Realm.init(this);
+    Realm.deleteRealm(Realm.getDefaultConfiguration());
   }
 }

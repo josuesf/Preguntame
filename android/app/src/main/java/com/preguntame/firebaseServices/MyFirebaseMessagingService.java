@@ -9,16 +9,24 @@ import android.content.Intent;
 import android.media.RingtoneManager;
 import android.net.Uri;
 import android.os.Build;
-import android.support.annotation.RequiresApi;
+import android.support.v4.app.NotificationCompat;
 import android.util.Log;
 
 import com.google.firebase.messaging.FirebaseMessagingService;
 import com.google.firebase.messaging.RemoteMessage;
 import com.preguntame.MainActivity;
 import com.preguntame.R;
+import com.preguntame.realmbd.models.ChatList;
 
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
+
+import io.realm.Realm;
+import io.realm.react.RealmReactPackage;
 
 /**
  * Created by Frank on 16/08/2018.
@@ -27,7 +35,7 @@ import java.util.Map;
 public class MyFirebaseMessagingService extends FirebaseMessagingService{
     private static final String TAG = "MessagingService";
 
-    @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
+    //@RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
     @Override
     public void onMessageReceived(RemoteMessage remoteMessage) {
         // ...
@@ -38,13 +46,35 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService{
 
         // Check if message contains a data payload.
         if (remoteMessage.getData().size() > 0) {
-            Log.d(TAG, "Message data payload: " + remoteMessage.getData());
+            final Map<String,String> data = remoteMessage.getData();
+            Log.d(TAG, "Message data payload: " + data);
 
             if(!isApplicationInForeground()) {
-
                 NotificationManager mNotificationManager = (NotificationManager) getSystemService(Context
                         .NOTIFICATION_SERVICE);
-                mNotificationManager.notify(1312312, createNotification(remoteMessage.getData()));
+                mNotificationManager.notify(1312312, createNotification(data));
+                Realm realm = Realm.getDefaultInstance();
+                realm.executeTransaction(new Realm.Transaction() {
+                    @Override
+                    public void execute(Realm realm) {
+                        ChatList chatList = realm.createObject(ChatList.class,data.get("id_mensaje"));
+                        chatList.setId_e(data.get("id_e"));
+                        chatList.setId_r(data.get("id_r"));
+                        chatList.setId_g(data.get("id_g"));
+                        chatList.setId_chat(data.get("id_e"));
+                        chatList.setMensaje(data.get("mensaje"));
+                        chatList.setTipo_mensaje(data.get("tipo_mensaje"));
+                        DateFormat dFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
+                        try {
+                            Date timestamp = dFormat.parse(data.get("timestamp"));
+                            chatList.setTimestamp(timestamp);
+                        } catch (ParseException e) {
+                            e.printStackTrace();
+                        }
+                        chatList.setEstado_mensaje(data.get("estado_mensaje"));
+                    }
+                });
+
             }
 
         }
@@ -57,22 +87,23 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService{
         // Also if you intend on generating your own notifications as a result of a received FCM
         // message, here is where that should be initiated. See sendNotification method below.
     }
-    @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
+    //@RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
     Notification createNotification(Map<String,String> data) {
         Uri uri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
-        String bigText = data.get("bigText");
+        String bigText = data.get("mensaje");
         Intent intent = new Intent(this, MainActivity.class);
         PendingIntent pIntent = PendingIntent.getActivity(this, (int) System.currentTimeMillis(), intent,
                 PendingIntent.FLAG_UPDATE_CURRENT);
 
-        Notification.Builder notificationBuilder = new Notification.Builder(this)
+        NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(this)
                 .setSmallIcon(R.mipmap.ic_launcher)
-                .setPriority(Notification.PRIORITY_DEFAULT)
-                .setContentTitle(data.get("titulo"))
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setContentTitle(data.get("id_e"))
                 .setContentText(data.get("mensaje"))
                 .setContentIntent(pIntent)
                 .setAutoCancel(true)
-                .setStyle(new Notification.BigTextStyle().bigText(bigText))
+                .setStyle(new NotificationCompat.BigTextStyle().bigText(bigText))
+                .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
                 .setVibrate(new long[]{ 350, 350,350,350,350})
                 .setSound(uri);
 

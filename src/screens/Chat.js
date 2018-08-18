@@ -19,7 +19,7 @@ import {
     KeyboardAvoidingView,
 } from 'react-native';
 import IconMaterial from 'react-native-vector-icons/MaterialCommunityIcons';
-import realm from '../bdrealm/realm'
+// import realm from '../bdrealm/realm'
 import { asyncFetch, fetchNode } from '../utils/fetchData'
 import AutoScroll from '../utils/AutoScroll';
 
@@ -56,7 +56,7 @@ export default class Chat extends Component {
     }
     recuperarUltimaHora = () => {
         fetchNode('/ws/get_estado_usuario', 'POST', { id_usuario: this.props.navigation.state.params.usuario }, (res, err) => {
-            console.log(res)
+            console.log('ultimavez',res)
             if (!err) {
                 if (res.estado != 'en linea') {
                     let fecha = new Date(res.estado)

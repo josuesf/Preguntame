@@ -7,7 +7,7 @@ import Register from './src/screens/Register'
 import Home from './src/screens/Home'
 import Amigos from './src/screens/Amigos'
 import { asyncFetch } from './src/utils/fetchData'
-import realm from './src/bdrealm/realm'
+//import realm from './src/bdrealm/realm'
 import SocketIOClient from 'socket.io-client';
 import FCMModule  from './src/NativeModules/FCMModule' 
 class Main extends Component {
@@ -41,31 +41,31 @@ class Main extends Component {
     global.socket.on('new_message', (p) => {
       let estado_mensaje = global.currentScreen == ("Chat#" + p.id_e) ? 'visto' : 'entregado'
 
-      realm.write(() => {
-        realm.create('ChatList', {
-          id_chat: p.id_e,
-          id_r: p.id_r,
-          id_e: p.id_e,
-          id_g: '' + p.id_g,
-          id_mensaje: p.id_mensaje,
-          mensaje: p.mensaje,
-          tipo_mensaje: p.tipo_mensaje,
-          timestamp: p.timestamp,
-          estado_mensaje,
-        }, true);
-        realm.create('Chats', {
-          id_chat: p.id_e,
-          id_r: p.id_r,
-          id_e: p.id_e,
-          id_g: '' + p.id_g,
-          id_mensaje: p.id_mensaje,
-          ultimo_mensaje: p.mensaje,
-          timestamp: p.timestamp,
-          avatar: p.avatar || '',
-          estado_mensaje: estado_mensaje,
-          tipo_mensaje: p.tipo_mensaje,
-        }, true);
-      })
+      // realm.write(() => {
+      //   realm.create('ChatList', {
+      //     id_chat: p.id_e,
+      //     id_r: p.id_r,
+      //     id_e: p.id_e,
+      //     id_g: '' + p.id_g,
+      //     id_mensaje: p.id_mensaje,
+      //     mensaje: p.mensaje,
+      //     tipo_mensaje: p.tipo_mensaje,
+      //     timestamp: p.timestamp,
+      //     estado_mensaje,
+      //   }, true);
+      //   realm.create('Chats', {
+      //     id_chat: p.id_e,
+      //     id_r: p.id_r,
+      //     id_e: p.id_e,
+      //     id_g: '' + p.id_g,
+      //     id_mensaje: p.id_mensaje,
+      //     ultimo_mensaje: p.mensaje,
+      //     timestamp: p.timestamp,
+      //     avatar: p.avatar || '',
+      //     estado_mensaje: estado_mensaje,
+      //     tipo_mensaje: p.tipo_mensaje,
+      //   }, true);
+      // })
       let msg = {}
       msg.id_mensaje = p.id_mensaje
       msg.estado_mensaje = estado_mensaje
@@ -84,36 +84,36 @@ class Main extends Component {
     });
     global.socket.on('status_message', (p) => {
       // console.log(p)
-      realm.write(() => {
-        realm.create('ChatList', {
-          id_mensaje: p.id_mensaje,
-          estado_mensaje: p.estado_mensaje,
-        }, true);
-        let mensaje = realm.objects('Chats').filtered('id_mensaje="' + p.id_mensaje + '"')
-        //console.log(mensaje[0].id_chat)
-        if (mensaje.length > 0) {
-          realm.create('Chats', { id_chat: mensaje[0].id_chat, estado_mensaje: p.estado_mensaje }, true);
-        }
-      })
+      // realm.write(() => {
+      //   realm.create('ChatList', {
+      //     id_mensaje: p.id_mensaje,
+      //     estado_mensaje: p.estado_mensaje,
+      //   }, true);
+      //   let mensaje = realm.objects('Chats').filtered('id_mensaje="' + p.id_mensaje + '"')
+      //   //console.log(mensaje[0].id_chat)
+      //   if (mensaje.length > 0) {
+      //     realm.create('Chats', { id_chat: mensaje[0].id_chat, estado_mensaje: p.estado_mensaje }, true);
+      //   }
+      // })
     });
 
   }
-  EnviarMensajesGuardados() {
-    const mensajes_guardados = realm.objects('ChatList').filtered('estado_mensaje="pendiente"').sorted('timestamp')
-    for (var i = 0; i < mensajes_guardados.length; i++) {
-      var id_mensaje = mensajes_guardados[i].id_mensaje
-      global.socket.emit('new_message', mensajes_guardados[i])
-    }
-    const mensajes_recibidos = realm.objects('ChatList').filtered('estado_mensaje!="visto_fin" and id_r="' + global.username + '"').sorted('timestamp')
-    //console.log('estado_mensaje="entregado" and id_r="'+global.username+'"',mensajes_recibidos.length)
-    for (var j = 0; j < mensajes_recibidos.length; j++) {
-      var p = mensajes_recibidos[j]
-      let msg = {}
-      msg.id_mensaje = p.id_mensaje
-      msg.estado_mensaje = p.estado_mensaje
-      global.socket.emit('status_message', msg)
-    }
-  }
+  // EnviarMensajesGuardados() {
+  //   const mensajes_guardados = realm.objects('ChatList').filtered('estado_mensaje="pendiente"').sorted('timestamp')
+  //   for (var i = 0; i < mensajes_guardados.length; i++) {
+  //     var id_mensaje = mensajes_guardados[i].id_mensaje
+  //     global.socket.emit('new_message', mensajes_guardados[i])
+  //   }
+  //   const mensajes_recibidos = realm.objects('ChatList').filtered('estado_mensaje!="visto_fin" and id_r="' + global.username + '"').sorted('timestamp')
+  //   //console.log('estado_mensaje="entregado" and id_r="'+global.username+'"',mensajes_recibidos.length)
+  //   for (var j = 0; j < mensajes_recibidos.length; j++) {
+  //     var p = mensajes_recibidos[j]
+  //     let msg = {}
+  //     msg.id_mensaje = p.id_mensaje
+  //     msg.estado_mensaje = p.estado_mensaje
+  //     global.socket.emit('status_message', msg)
+  //   }
+  // }
   componentWillMount() {
     console.log(FCMModule.TOKEN)
     AsyncStorage.getItem('USUARIO', (err, res) => {
@@ -122,63 +122,65 @@ class Main extends Component {
       } else if (res != null || res != undefined) {
         global.username = JSON.parse(res).usuario
         global.socket.emit('online', global.username)
-        asyncFetch('/ws/get_all_message', 'POST', { id_usuario: JSON.parse(res).usuario }, (res) => {
+        // asyncFetch('/ws/get_all_message', 'POST', { id_usuario: JSON.parse(res).usuario }, (res) => {
 
-          if (res.respuesta == 'ok') {
-            let pendientes = res.data.pendientes;
+        //   if (res.respuesta == 'ok') {
+        //     let pendientes = res.data.pendientes;
 
-            let entregados_vistos = res.data.entregados_vistos;
+        //     let entregados_vistos = res.data.entregados_vistos;
 
 
-            for (let p of pendientes) {
-              let estado_mensaje = global.currentScreen == ("Chat#" + p.id_e) ? 'visto' : 'entregado'
-              realm.write(() => {
-                realm.create('ChatList', {
-                  id_chat: p.id_e,
-                  id_r: p.id_r,
-                  id_e: p.id_e,
-                  id_g: '' + p.id_g,
-                  id_mensaje: p.id_mensaje,
-                  mensaje: p.mensaje,
-                  tipo_mensaje: p.tipo_mensaje,
-                  timestamp: p.timestamp,
-                  estado_mensaje: estado_mensaje,
-                }, true);
-                realm.create('Chats', {
-                  id_chat: p.id_e,
-                  id_r: p.id_r,
-                  id_e: p.id_e,
-                  id_g: '' + p.id_g,
-                  id_mensaje: p.id_mensaje,
-                  ultimo_mensaje: p.mensaje,
-                  timestamp: p.timestamp,
-                  avatar: p.avatar || '',
-                  estado_mensaje: estado_mensaje,
-                  tipo_mensaje: p.tipo_mensaje,
-                }, true);
-              })
-              let msg = {}
-              msg.id_mensaje = p.id_mensaje
-              msg.estado_mensaje = estado_mensaje
-              global.socket.emit('status_message', msg)
-            }
-            for (let e of entregados_vistos) {
-              realm.write(() => {
-                realm.create('ChatList', {
-                  id_mensaje: e.id_mensaje,
-                  estado_mensaje: e.estado_mensaje,
-                }, true);
-                let mensaje = realm.objects('Chats').filtered('id_mensaje="' + e.id_mensaje + '"')
-                //console.log(mensaje[0].id_chat)
-                if (mensaje.length > 0) {
-                  realm.create('Chats', { id_chat: mensaje[0].id_chat, estado_mensaje: e.estado_mensaje }, true);
-                }
-              })
-            }
+        //     for (let p of pendientes) {
+        //       let estado_mensaje = global.currentScreen == ("Chat#" + p.id_e) ? 'visto' : 'entregado'
+        //       realm.write(() => {
+        //         realm.create('ChatList', {
+        //           id_chat: p.id_e,
+        //           id_r: p.id_r,
+        //           id_e: p.id_e,
+        //           id_g: '' + p.id_g,
+        //           id_mensaje: p.id_mensaje,
+        //           mensaje: p.mensaje,
+        //           tipo_mensaje: p.tipo_mensaje,
+        //           timestamp: p.timestamp,
+        //           estado_mensaje: estado_mensaje,
+        //         }, true);
+        //         realm.create('Chats', {
+        //           id_chat: p.id_e,
+        //           id_r: p.id_r,
+        //           id_e: p.id_e,
+        //           id_g: '' + p.id_g,
+        //           id_mensaje: p.id_mensaje,
+        //           ultimo_mensaje: p.mensaje,
+        //           timestamp: p.timestamp,
+        //           avatar: p.avatar || '',
+        //           estado_mensaje: estado_mensaje,
+        //           tipo_mensaje: p.tipo_mensaje,
+        //         }, true);
+        //       })
+        //       let msg = {}
+        //       msg.id_mensaje = p.id_mensaje
+        //       msg.estado_mensaje = estado_mensaje
+        //       global.socket.emit('status_message', msg)
+        //     }
+        //     for (let e of entregados_vistos) {
+        //       realm.write(() => {
+        //         realm.create('ChatList', {
+        //           id_mensaje: e.id_mensaje,
+        //           estado_mensaje: e.estado_mensaje,
+        //         }, true);
+        //         let mensaje = realm.objects('Chats').filtered('id_mensaje="' + e.id_mensaje + '"')
+        //         //console.log(mensaje[0].id_chat)
+        //         if (mensaje.length > 0) {
+        //           realm.create('Chats', { id_chat: mensaje[0].id_chat, estado_mensaje: e.estado_mensaje }, true);
+        //         }
+        //       })
+        //       if(e.estado_mensaje=='visto')
+        //         global.socket.emit('status_message', {id_mensaje:e.id_mensaje,estado_mensaje:'visto_fin'})
+        //     }
 
-          }
-        })
-        this.props.navigation.replace('home')
+        //   }
+        // })
+        // this.props.navigation.replace('home')
       } else {
         this.props.navigation.navigate('register', { token:FCMModule.TOKEN })
         // this.notif.configure(this.onRegister.bind(this), this.onNotif.bind(this), this.state.senderId)

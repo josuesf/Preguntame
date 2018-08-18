@@ -15,7 +15,7 @@ import {
     AsyncStorage,
 } from 'react-native';
 import IconMaterial from 'react-native-vector-icons/MaterialCommunityIcons';
-import realm from '../bdrealm/realm'
+// import realm from '../bdrealm/realm'
 import FCMModule  from '../NativeModules/FCMModule'
 import { asyncFetch,fetchNode } from '../utils/fetchData'
 export default class Home extends Component {
@@ -59,17 +59,17 @@ export default class Home extends Component {
 
         })
     }
-    recuperarNroMensajes=(id_e)=>{
-        let mensajes = realm.objects('ChatList').filtered('estado_mensaje=="entregado" AND id_e="'+id_e+'"')
-        return mensajes.length
-    }
+    // recuperarNroMensajes=(id_e)=>{
+    //     let mensajes = realm.objects('ChatList').filtered('estado_mensaje=="entregado" AND id_e="'+id_e+'"')
+    //     return mensajes.length
+    // }
     componentDidMount(){
-        realm.addListener('change', () => {
-            console.log('entro aqui')
-            this.setState({
-                chats: realm.objects('Chats').sorted('timestamp', true),
-            })
-        });
+        // realm.addListener('change', () => {
+        //     console.log('entro aqui')
+        //     this.setState({
+        //         chats: realm.objects('Chats').sorted('timestamp', true),
+        //     })
+        // });
         
     }
     render() {

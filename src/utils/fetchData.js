@@ -33,10 +33,10 @@ module.exports = {
             },
             body: JSON.stringify(params)
         }
-        fetch('http://192.168.1.6:8080' + url, parametros) // https://que5node.herokuapp.com
+        fetch('https://que5node.herokuapp.com' + url, parametros) // https://que5node.herokuapp.com
             .then((response) => response.json())
             .then((responseJson) => {
-                console.log(responseJson)
+                console.log('ultimLog',responseJson)
                 if(responseJson.respuesta=='ok'){
                     callback(responseJson,undefined)
                 }else{
@@ -45,6 +45,7 @@ module.exports = {
                 
             })
             .catch(err => {
+                console.log('ultimLog',err)
                 callback(undefined,err)
             })
     },
