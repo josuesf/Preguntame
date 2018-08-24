@@ -1,5 +1,7 @@
 package com.preguntame.realmbd.models;
 
+import com.facebook.react.bridge.WritableNativeMap;
+
 import java.util.Date;
 
 import io.realm.RealmObject;
@@ -93,5 +95,19 @@ public class ChatList extends RealmObject{
 
     public void setEstado_mensaje(String estado_mensaje) {
         this.estado_mensaje = estado_mensaje;
+    }
+
+    public WritableNativeMap getReactObject(){
+        WritableNativeMap newMessage = new WritableNativeMap();
+        newMessage.putString("id_mensaje",getId_mensaje());
+        newMessage.putString("id_e",getId_e());
+        newMessage.putString("id_r",getId_r());
+        newMessage.putString("id_g",getId_g());
+        newMessage.putString("id_chat",getId_chat());
+        newMessage.putString("mensaje",getMensaje());
+        newMessage.putString("tipo_mensaje",getTipo_mensaje());
+        newMessage.putString("timestamp",String.valueOf(getTimestamp().getTime()));
+        newMessage.putString("estado_mensaje",getEstado_mensaje());
+        return newMessage;
     }
 }

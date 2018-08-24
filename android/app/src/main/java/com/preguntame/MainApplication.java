@@ -5,7 +5,6 @@ import android.app.Application;
 import com.facebook.react.ReactApplication;
 
 import io.realm.Realm;
-import io.realm.react.RealmReactPackage;
 import com.oblador.vectoricons.VectorIconsPackage;
 import com.facebook.react.ReactNativeHost;
 import com.facebook.react.ReactPackage;
@@ -29,7 +28,6 @@ public class MainApplication extends Application implements ReactApplication {
     protected List<ReactPackage> getPackages() {
       return Arrays.<ReactPackage>asList(
           new MainReactPackage(),
-            new RealmReactPackage(),
             new VectorIconsPackage(),
             new FCMPackager(),
             new RealmPackager()
@@ -52,6 +50,6 @@ public class MainApplication extends Application implements ReactApplication {
     super.onCreate();
     SoLoader.init(this, /* native exopackage */ false);
     Realm.init(this);
-    Realm.deleteRealm(Realm.getDefaultConfiguration());
+//    Realm.deleteRealm(Realm.getDefaultConfiguration());
   }
 }

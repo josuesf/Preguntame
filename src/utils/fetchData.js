@@ -36,7 +36,7 @@ module.exports = {
         fetch('https://que5node.herokuapp.com' + url, parametros) // https://que5node.herokuapp.com
             .then((response) => response.json())
             .then((responseJson) => {
-                console.log('ultimLog',responseJson)
+                //console.log('ultimLog',responseJson)
                 if(responseJson.respuesta=='ok'){
                     callback(responseJson,undefined)
                 }else{
@@ -60,6 +60,7 @@ module.exports = {
         }
         const response = await fetch('http://omaralex.pythonanywhere.com'+url,parametros);
         const json = await response.json();
-        callback(json)
+        if(callback!=undefined)
+            callback(json)
     }
 }

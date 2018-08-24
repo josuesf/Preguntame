@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">Preguntame</string>
+    <string name="url_servidor">http://omaralex.pythonanywhere.com</string>
 </resources>

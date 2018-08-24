@@ -21,11 +21,11 @@ export default class Input extends Component {
     handleFocus() {
         Animated.timing(this.state._labelPositionTop, {
             toValue: LABEL_DEFAULT_TOP_FOCUS,
-            duration: 300,
+            duration: 100,
         }).start();
         Animated.timing(this.state._labelFontSize, {
             toValue: LABEL_FONT_SIZE_FOCUS,
-            duration: 300,
+            duration: 100,
         }).start();
     }
 
@@ -33,11 +33,11 @@ export default class Input extends Component {
         if(!this.props.value){
             Animated.timing(this.state._labelPositionTop, {
                 toValue: LABEL_DEFAULT_TOP,
-                duration: 300,
+                duration: 100,
             }).start();
             Animated.timing(this.state._labelFontSize, {
                 toValue: LABEL_FONT_SIZE,
-                duration: 400,
+                duration: 100,
             }).start();
         }
     }

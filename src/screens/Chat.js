@@ -13,19 +13,27 @@ import {
     TouchableOpacity,
     StatusBar,
     TextInput,
-    ScrollView,
-    AsyncStorage,
+    DeviceEventEmitter,
     FlatList,
     KeyboardAvoidingView,
+    AppState,
+    ActivityIndicator,
 } from 'react-native';
 import IconMaterial from 'react-native-vector-icons/MaterialCommunityIcons';
 // import realm from '../bdrealm/realm'
 import { asyncFetch, fetchNode } from '../utils/fetchData'
-import AutoScroll from '../utils/AutoScroll';
+import RealmModule from '../NativeModules/RealmModule'
+import Message from '../components/Message'
+
 
 export default class Chat extends Component {
     static navigationOptions = {
-        header: null,
+        title: "@usuario",
+        headerTintColor: 'white',
+        headerStyle: {
+            backgroundColor: '#7e5682'
+        },
+        header: null
     };
     constructor(props) {
         super(props)
@@ -36,37 +44,64 @@ export default class Chat extends Component {
             id_usuario: global.username,
             mensajes: [],
             chat_con: props.navigation.state.params.usuario,
-            estado_usuario: ''
+            estado_usuario: '',
+            mensaje: "",
+            appState: AppState.currentState,
+            pagina: 1,
+            nroMensajes: 15,
+            cargando_mensaje: true
         }
         global.currentScreen = 'Chat#' + props.navigation.state.params.usuario
         global.socket.off('escribiendo')
+        this.messagedReceivedListener = DeviceEventEmitter.addListener('messagedReceived', this.newMessageReceived)
+    }
+    componentWillMount() {
+        this.EnviarMensajesGuardados()
+        this.EnviarMensajesVistos({ id_chat: this.props.navigation.state.params.usuario })
+        this.ActualizarMensajes()
+        this.recuperarUltimaHora()
     }
     componentDidMount() {
-        realm.addListener('change', () => {
-            this.ActualizarMensajes()
-            //this.EnviarMensajesGuardados()
-            //this.EnviarMensajesVistos()
-        });
         global.socket.on('escribiendo', (data) => {
-            this.setState({ estado_usuario: 'Escribiendo...' })
-            setTimeout(() => {
-                this.recuperarUltimaHora()
-            }, 3000)
+            console.log(data)
+            if (data.id_e == this.state.chat_con) {
+                this.setState({ estado_usuario: 'escribiendo...' })
+                setTimeout(() => {
+                    this.recuperarUltimaHora()
+                }, 3000)
+            }
         })
+
+        this.intervalUltimavez = setInterval(this.recuperarUltimaHora, 3000)
+        AppState.addEventListener('change', this._handleAppStateChange);
+    }
+    newMessageReceived = (newMessage) => {
+        console.log("nuevos mensajes")
+        if (this.state.chat_con == newMessage.id_chat) {
+            this.setState({ mensajes: [newMessage, ...this.state.mensajes] });
+            if (global.currentScreen == 'Chat#' + this.props.navigation.state.params.usuario)
+                this.EnviarMensajesVistos({ id_chat: this.props.navigation.state.params.usuario })
+            this.EnviarMensajesGuardados()
+        }
     }
     recuperarUltimaHora = () => {
         fetchNode('/ws/get_estado_usuario', 'POST', { id_usuario: this.props.navigation.state.params.usuario }, (res, err) => {
-            console.log('ultimavez',res)
+            // console.log('ultimavez', res)
             if (!err) {
                 if (res.estado != 'en linea') {
                     let fecha = new Date(res.estado)
-                    'yyyy-mm-dd HH:mm:ss'
+                    let hoy = new Date()
+
                     var mes = fecha.getMonth() + 1
                     var dia = fecha.getDate()
                     var hora = fecha.getHours()
                     var minutos = fecha.getMinutes()
-                    let fechaFormat = fecha.getFullYear() + '-' + (mes > 9 ? mes : '0' + mes) + '-' + (dia > 9 ? dia : '0' + dia) + ' ' + (hora > 9 ? hora : '0' + hora) + ':' + (minutos > 9 ? minutos : '0' + minutos)
-                    this.setState({ estado_usuario: 'Ultima vez '+fechaFormat })
+                    let fechaFormat = 'hoy a las ' + (hora > 9 ? hora : '0' + hora) + ':' + (minutos > 9 ? minutos : '0' + minutos)
+                    if (dia != hoy.getDate()) {
+                        fechaFormat = (dia > 9 ? dia : '0' + dia) + '-' + (mes > 9 ? mes : '0' + mes) + '-' + fecha.getFullYear() + ' a las ' + (hora > 9 ? hora : '0' + hora) + ':' + (minutos > 9 ? minutos : '0' + minutos)
+                    }
+
+                    this.setState({ estado_usuario: 'Ultima vez ' + fechaFormat })
                 }
                 else {
                     this.setState({ estado_usuario: res.estado })
@@ -74,46 +109,41 @@ export default class Chat extends Component {
             }
         })
     }
-    componentWillMount() {
-        this.EnviarMensajesGuardados()
-        this.EnviarMensajesVistos()
-        this.ActualizarMensajes()
-        this.recuperarUltimaHora()
+    _handleAppStateChange = (nextAppState) => {
+        if (this.state.appState.match(/inactive|background/) && nextAppState === 'active') {
+            console.log("Chat..." + 'App has come to the foreground!')
+            this.EnviarMensajesGuardados()
+            this.EnviarMensajesVistos({ id_chat: this.props.navigation.state.params.usuario })
+            this.ActualizarMensajes()
+        }
+        console.log("Chat..." + nextAppState)
+        this.setState({ appState: nextAppState });
     }
     componentWillUnmount() {
-        //realm.removeAllListeners('change')
         global.currentScreen = 'Home'
+        clearInterval(this.intervalUltimavez)
+        AppState.removeEventListener('change', this._handleAppStateChange);
     }
     ActualizarMensajes = () => {
-        const { id_usuario, chat_con } = this.state
-        this.setState({
-            mensajes: realm.objects('ChatList').filtered('id_chat="' + chat_con + '"').sorted('timestamp', true).slice(0, 10),
-            mensaje: ""
-        })
+        const { chat_con } = this.state
+        // console.log(chat_con)
+        RealmModule.getMessagesbyUser({ id_chat: chat_con }, (mensajes) => {
+            //.slice(0, 10),
+            // console.log(mensajes)
+            this.setState({ mensajes: mensajes.slice(0, 15), cargando_mensaje: false })
+        }, (err) => { console.log(err) })
     }
     escribirMensaje = (text) => {
+        if (text.length > this.state.mensaje.length)
+            global.socket.emit('escribiendo', { id_r: this.state.chat_con, id_e: this.state.id_usuario })
         this.setState({ mensaje: text })
-        global.socket.emit('escribiendo', { id_r: this.state.chat_con })
+
     }
     EnviarMensaje = () => {
         if (this.state.mensaje.length > 0) {
-            let time = new Date()
+            let time = Date.now()
             //Crear o Actulizar Chat
             let id_mensaje = this.state.chat_con + this.state.id_usuario + Date.now()
-            realm.write(() => {
-                realm.create('Chats', {
-                    id_chat: this.state.chat_con,
-                    id_r: this.state.chat_con,
-                    id_e: this.state.id_usuario,
-                    id_g: '-1',
-                    id_mensaje,
-                    ultimo_mensaje: this.state.mensaje,
-                    timestamp: time,
-                    avatar: '',
-                    estado_mensaje: 'pendiente',
-                    tipo_mensaje: 'texto',
-                }, true);
-            });
             //Agregar Mensaje
             let new_message = {
                 id_chat: this.state.chat_con,
@@ -121,197 +151,100 @@ export default class Chat extends Component {
                 id_e: this.state.id_usuario,
                 id_g: '-1',
                 id_mensaje,
-                mensaje: this.state.mensaje,
+                mensaje: this.state.mensaje.trim(),
                 tipo_mensaje: 'texto',
                 timestamp: time,
                 estado_mensaje: 'pendiente',
             }
-            realm.write(() => {
-                realm.create('ChatList', new_message);
-            });
+            console.log(new_message)
+            RealmModule.saveMessage(new_message, (message) => { this.ActualizarMensajes() }, (err) => alert(err))
+            this.setState({ mensaje: "" })
             //this.EnviarMensajesGuardados()
             //this.EnviarMensajesGuardados()
-            global.socket.emit('new_message', new_message)
+            //global.socket.emit('new_message', new_message)
         }
     }
     EnviarMensajesGuardados() {
-        const mensajes_guardados = realm.objects('ChatList').filtered('estado_mensaje="pendiente"').sorted('timestamp')
-        for (var i = 0; i < mensajes_guardados.length; i++) {
-            console.log('se encontro ' + mensajes_guardados.length + ' pendientes')
-            var id_mensaje = mensajes_guardados[i].id_mensaje
-            global.socket.emit('new_message', mensajes_guardados[i])
-            // asyncFetch('/ws/send_message', 'POST', mensajes_guardados[i], (res) => {
-            //     if (res.respuesta == 'ok') {
-            //         console.log(res.data)
-            //         realm.write(() => {
-            //             realm.create('ChatList', {
-            //                 id_mensaje: res.data,
-            //                 estado_mensaje: 'enviado',
-            //             }, true);
-            //             realm.create('Chats', {
-            //                 id_chat: this.state.chat_con,
-            //                 estado_mensaje: 'enviado',
-            //             }, true);
-            //         });
-            //     }
-
-            // })
-
-        }
+        //RealmModule.sendPendientes({id_e:this.state.id_usuario})
+        RealmModule.sendPendientes({ id_e: this.state.id_usuario }, (data) => console.log(data))
     }
     EnviarMensajesVistos() {
-        const mensajes_guardados = realm.objects('ChatList').filtered('estado_mensaje != "visto_fin" AND id_r ="' + this.state.id_usuario + '"').sorted('timestamp')
-        console.log('se encontro ' + mensajes_guardados.length + ' vistos')
-        for (var i = 0; i < mensajes_guardados.length; i++) {
-            //var id_mensaje = mensajes_guardados[i].id_mensaje
-            let msg = {}
-            msg.id_mensaje = mensajes_guardados[i].id_mensaje
-            msg.estado_mensaje = 'visto'
-            if (mensajes_guardados[i].estado_mensaje != 'visto') {
-                realm.write(() => {
-                    realm.create('ChatList', {
-                        id_mensaje: mensajes_guardados[i].id_mensaje,
-                        estado_mensaje: 'visto',
-                    }, true);
-                    let mensaje = realm.objects('Chats').filtered('id_mensaje="' + mensajes_guardados[i].id_mensaje + '"')
-                    //console.log(mensaje[0].id_chat)
-                    if (mensaje.length > 0) {
-                        realm.create('Chats', { id_chat: mensaje[0].id_chat, estado_mensaje: 'visto' }, true);
-                    }
-                });
-            }
-            global.socket.emit('status_message', msg)
+        RealmModule.sendVistos({ id_chat: this.state.chat_con })
+    }
+
+    _keyExtractor = (item, index) => item.id_mensaje;
+    onScrollHandler = () => {
+        const { chat_con, pagina, nroMensajes, no_hay_mensajes } = this.state
+
+        if (!no_hay_mensajes) {
+            this.setState({ cargando_mensaje: true })
+            // console.log(chat_con)
+
+            RealmModule.getMessagesbyUser({ id_chat: chat_con }, (mensajes) => {
+                //.slice(0, 10),
+                // console.log(mensajes)
+                if (mensajes.length > 0) {
+                    this.setState({
+                        mensajes: this.state.mensajes.concat(mensajes.slice(pagina, (pagina + 1) * nroMensajes)),
+                        pagina: pagina + 1,
+                        cargando_mensaje: false
+                    })
+                } else {
+                    this.setState({ no_hay_mensajes: true, cargando_mensaje: false })
+                }
+            }, (err) => { console.log(err) })
         }
     }
-    Hora = (date) => {
-        date = new Date(date)
-        var hora = date.getHours() > 9 ? date.getHours() : "0" + date.getHours()
-        var minutos = date.getMinutes() > 9 ? date.getMinutes() : "0" + date.getMinutes()
-        return hora + ":" + minutos
-    }
-    renderItem = ({ m }) => {
-
-        return (
-            m.id_e == this.state.id_usuario ?
-                <View key={m.id_mensaje} style={{ flexDirection: 'row', alignItems: 'center' }}>
-                    <View style={{ flex: 1 }} />
-                    <View style={{
-                        padding: 10, backgroundColor: '#F0F3BD', borderRadius: 10, marginBottom: 5, marginLeft: 20, marginRight: 5
-                    }}>
-                        <Text style={{ color: '#6B6B6B', fontSize: 15, paddingRight: 5 }}>{m.mensaje}</Text>
-                        <View style={{ flexDirection: 'row', marginLeft: 5, alignItems: 'center', alignSelf: 'flex-end' }}>
-                            <Text style={{ color: '#6B6B6B', fontSize: 11, marginRight: 2, }}>{this.Hora(m.timestamp)}</Text>
-                            {/* <IconMaterial size={15} color="#6B6B6B" name="clock-outline" /> */}
-                            <IconMaterial size={15} color={m.estado_mensaje == "visto" ? "#70CDEB" : "#6B6B6B"} name={name_icon(m.estado_mensaje)} />
-                            {/* <IconMaterial size={15} color="#6B6B6B" name="check-all"/> */}
-                            {/* <IconMaterial size={15} color="#70CDEB" name="check-all" /> */}
-                        </View>
-                    </View>
-                </View> :
-                <View key={m.id_mensaje} style={{ flexDirection: 'row', alignItems: 'center' }}>
-                    <View style={{ padding: 10, backgroundColor: '#FFF', borderRadius: 10, marginBottom: 5, marginRight: 20, marginLeft: 5 }}>
-                        <Text style={{ color: '#6B6B6B', fontSize: 15 }}>{m.mensaje}</Text>
-                        <View style={{ flexDirection: 'row', marginLeft: 5, alignItems: 'center', alignSelf: 'flex-end' }}>
-                            <Text style={{ color: '#6B6B6B', fontSize: 11, marginRight: 2 }}>{this.Hora(m.timestamp)}</Text>
-                        </View>
-
-                    </View>
-
-                    <View style={{ flex: 1 }} />
-                </View>
-        );
-    }
-    _keyExtractor = (item, index) => item.id_mensaje;
     render() {
         const { navigate, goBack } = this.props.navigation;
-        const { mensajes } = this.state
-        const name_icon = (estado) => {
-            if (estado == "pendiente")
-                return "clock-outline"
-            else if (estado == "enviado")
-                return "check"
-            else
-                return "check-all"
-        }
-
+        const { mensajes, id_usuario } = this.state
         return (
             <View style={styles.container}>
                 <StatusBar
-                    backgroundColor="#008577"
+                    backgroundColor="#604263"
                     barStyle="light-content"
                 />
                 <View style={{
-                    backgroundColor: '#00A896',
-                    paddingHorizontal: 16, paddingTop: 10, paddingBottom: 10
+                    backgroundColor: '#7e5682',
+                    paddingHorizontal: 16, paddingTop: 10, paddingBottom: 10, height: 60
                 }}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <View style={{ flexDirection: 'row' }}>
                         <TouchableOpacity onPress={() => goBack()} style={{ alignItems: 'center', marginRight: 20 }}>
-                            <IconMaterial name="arrow-left" size={35} color="#F0F3BD" />
+                            <IconMaterial name="arrow-left" size={25} color="#FFF" />
                         </TouchableOpacity>
-                        <Text style={{ color: '#F0F3BD', fontSize: 16, fontWeight: 'bold' }}>Preguntas con {this.state.chat_con}</Text>
+                        <View>
+                            <Text style={{ color: '#FFF', fontSize: 16, fontWeight: 'bold' }}>Preguntas con {this.state.chat_con}</Text>
+                            {this.state.estado_usuario != "" && <Text style={{ color: '#FFF', fontSize: 12 }}>{this.state.estado_usuario}</Text>}
+                        </View>
                     </View>
 
-                    <Text style={{ color: '#F0F3BD', fontSize: 11, marginLeft: 60 }}>{this.state.estado_usuario}</Text>
                 </View>
+                {this.state.cargando_mensaje && <ActivityIndicator size="large" color="#604263" style={{ paddingVertical: 5 }} />}
                 <FlatList
                     data={mensajes}
                     keyExtractor={this._keyExtractor}
-                    renderItem={({ item }) => item.id_e == this.state.id_usuario ?
-                        <View key={item.id_mensaje} style={{ flexDirection: 'row', alignItems: 'center' }}>
-                            <View style={{ flex: 1 }} />
-                            <View style={{
-                                padding: 10, backgroundColor: '#F0F3BD', borderRadius: 10, marginBottom: 5, marginLeft: 20, marginRight: 5
-                            }}>
-                                <Text style={{ color: '#6B6B6B', fontSize: 15, paddingRight: 5 }}>{item.mensaje}</Text>
-                                <View style={{ flexDirection: 'row', marginLeft: 5, alignItems: 'center', alignSelf: 'flex-end' }}>
-                                    <Text style={{ color: '#6B6B6B', fontSize: 11, marginRight: 2, }}>{this.Hora(item.timestamp)}</Text>
-                                    {/* <IconMaterial size={15} color="#6B6B6B" name="clock-outline" /> */}
-                                    <IconMaterial size={15} color={(item.estado_mensaje == "visto" || item.estado_mensaje == "visto_fin") ? "#70CDEB" : "#6B6B6B"} name={name_icon(item.estado_mensaje)} />
-                                    {/* <IconMaterial size={15} color="#6B6B6B" name="check-all"/> */}
-                                    {/* <IconMaterial size={15} color="#70CDEB" name="check-all" /> */}
-                                </View>
-                            </View>
-                        </View> :
-                        <View key={item.id_mensaje} style={{ flexDirection: 'row', alignItems: 'center' }}>
-                            <View style={{ padding: 10, backgroundColor: '#FFF', borderRadius: 10, marginBottom: 5, marginRight: 20, marginLeft: 5 }}>
-                                <Text style={{ color: '#6B6B6B', fontSize: 15 }}>{item.mensaje}</Text>
-                                <View style={{ flexDirection: 'row', marginLeft: 5, alignItems: 'center', alignSelf: 'flex-end' }}>
-                                    <Text style={{ color: '#6B6B6B', fontSize: 11, marginRight: 2 }}>{this.Hora(item.timestamp)}</Text>
-                                </View>
-
-                            </View>
-
-                            <View style={{ flex: 1 }} />
-                        </View>}
+                    renderItem={({ item }) => (<Message message={item} mi_usuario={id_usuario} />)}
                     inverted
+                    onEndReached={this.onScrollHandler}
+                    onEndThreshold={20}
                 />
+
                 <KeyboardAvoidingView behavior="height">
+
                     <View style={styles.footer}>
                         <TextInput
+                            multiline={true}
                             value={this.state.mensaje}
                             style={styles.input}
                             underlineColorAndroid="transparent"
-                            placeholder="Type something nice"
+                            placeholder="Escribe tu mensaje"
                             onChangeText={(text) => this.escribirMensaje(text)}
                         />
                         <TouchableOpacity onPress={() => this.EnviarMensaje()}>
-                            <Text style={styles.send}>Send</Text>
+                            <Text style={styles.send}>Enviar</Text>
                         </TouchableOpacity>
                     </View>
                 </KeyboardAvoidingView>
-
-
-
-                {/* <View style={styles.bottomNav}>
-                    <View style={{ paddingVertical: 5, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: 10, marginBottom: 10 }}>
-                        <View style={{ backgroundColor: '#FFF', borderRadius: 20, height: 50, flex: 1, margin: 10, justifyContent: 'center', paddingLeft: 10 }}>
-                            <TextInput value={this.state.mensaje} onChangeText={(text) => this.setState({ mensaje: text })} underlineColorAndroid="transparent" style={{ paddingLeft: 5 }} placeholder="Escribir mensaje" />
-                        </View>
-                        <TouchableOpacity onPress={() => this.EnviarMensaje()} style={{ height: 50, width: 50, borderRadius: 25, backgroundColor: '#00A896', marginRight: 5, justifyContent: 'center', alignItems: 'center' }}>
-                            <IconMaterial color="#FFF" size={25} name="send" />
-                        </TouchableOpacity>
-                    </View>
-                </View> */}
             </View>
         );
     }
@@ -338,16 +271,16 @@ const styles = StyleSheet.create({
     },
     footer: {
         flexDirection: 'row',
-        backgroundColor: '#eee'
+        backgroundColor: '#FCFCFC'
     },
     input: {
         paddingHorizontal: 20,
         fontSize: 18,
-        flex: 1
+        flex: 1,
     },
     send: {
         alignSelf: 'center',
-        color: 'lightseagreen',
+        color: '#744BFF',
         fontSize: 16,
         fontWeight: 'bold',
         padding: 20

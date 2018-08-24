@@ -1,5 +1,9 @@
 package com.preguntame.firebaseServices;
 
+import android.app.NotificationManager;
+import android.content.Context;
+
+import com.facebook.react.bridge.Callback;
 import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.bridge.ReactContextBaseJavaModule;
 import com.facebook.react.bridge.ReactMethod;
@@ -28,7 +32,15 @@ public class FCMModule extends ReactContextBaseJavaModule {
         return "FCMModule";
     }
     @ReactMethod
-    public String getToken() {
-        return "Mitoken12312312";
+    public void getToken(Callback callback) {
+        callback.invoke(FirebaseInstanceId.getInstance().getToken());
+    }
+    @ReactMethod
+    public void cancelAllLocalNotifications() {
+        NotificationManager notificationManager = notificationManager();
+        notificationManager.cancelAll();
+    }
+    private NotificationManager notificationManager() {
+        return (NotificationManager) getCurrentActivity().getSystemService(Context.NOTIFICATION_SERVICE);
     }
 }

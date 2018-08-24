@@ -10,10 +10,10 @@ import Icon from 'react-native-vector-icons/FontAwesome';
 import {getPlatformValue} from '../utils';
 import { fetchData } from '../utils/fetchData';
 import RealmModule from '../NativeModules/RealmModule'
-export default class Register extends Component {
+export default class LoginUsuario extends Component {
 
     static navigationOptions = {
-        title: 'Registrate',
+        title: 'Iniciar Sesion',
         headerTintColor: 'white',
         headerStyle: {
             backgroundColor: '#7e5682'
@@ -90,17 +90,17 @@ export default class Register extends Component {
             delay: 130
         }).start();
     }
-    Registrar = ()=>{
+    IniciarSesion = ()=>{
         let {token} = this.props.navigation.state.params
         console.log(token)
-        fetchData('/ws/create_user','POST',{usuario:this.state.username,email:this.state.email,password:this.state.password,token,tipo:'android'},(res,err)=>{
-            if (err) console.log(err)
+        fetchData('/ws/login_user','POST',{usuario:this.state.username,password:this.state.password,token,tipo:'android'},(res,err)=>{
+            if (err) Alert.alert('Error',err)
             if(!err){
                 RealmModule.setUser({
                     username:this.state.username,
                     email:this.state.email,
                     token_fcm:token
-                },(respuesta)=>console.log(respuesta),(err)=>console.log(err))
+                },(respuesta)=>console.log(respuesta),(err)=>console.log(err))   
                 AsyncStorage.setItem("USUARIO",JSON.stringify(
                     {usuario:this.state.username,email:this.state.email,password:this.state.password,token,tipo:'android'}
                 ))
@@ -112,12 +112,10 @@ export default class Register extends Component {
             }
         })
     }
-
-    Login = ()=>{
-        let {token} = this.props.navigation.state.params
+    Registrar = ()=>{
         const resetAction = StackActions.reset({
             index: 0,
-            actions: [NavigationActions.navigate({ routeName: 'login_user',params:{token} })],
+            actions: [NavigationActions.navigate({ routeName: 'main' })],
           });
         this.props.navigation.dispatch(resetAction);
     }
@@ -146,12 +144,6 @@ export default class Register extends Component {
                                     value={this.state.username}
                                     onChange={this.handleChangeInput.bind(this, 'username')}
                             />
-                            <Input label="Email"
-                                    icon={<Icon name="envelope-o"/>}
-                                    value={this.state.email}
-                                    marginTop={23}
-                                    onChange={this.handleChangeInput.bind(this, 'email')}
-                            />
                             <Input label="Contraseña"
                                     icon={<Icon name="key"/>}
                                     value={this.state.password}
@@ -162,7 +154,7 @@ export default class Register extends Component {
                         </Animated.View>
                         <Animated.View style={{position: 'relative',marginTop:50, top: this.state.animation.buttonPositionTop}}>
 
-                            <TouchableOpacity onPress={()=>this.Registrar()}
+                            <TouchableOpacity onPress={()=>this.IniciarSesion()}
                                     activeOpacity={0.8}
                                     disabled={this.state.cargando}
                                     style={{
@@ -181,9 +173,9 @@ export default class Register extends Component {
                                         alignItems: 'center', justifyContent: 'center'
                                     }}>
                                     <Icon name='check' color='white' size={20} />
-                                    <Text style={{ color: '#fff', fontWeight: 'bold', marginLeft: 10 }}>Registrar</Text>
+                                    <Text style={{ color: '#fff', fontWeight: 'bold', marginLeft: 10 }}>Iniciar</Text>
                             </TouchableOpacity> 
-                            <TouchableOpacity onPress={()=>this.Login()}
+                            <TouchableOpacity onPress={()=>this.Registrar()}
                                     activeOpacity={0.8}
                                     disabled={this.state.cargando}
                                     style={{
@@ -202,9 +194,8 @@ export default class Register extends Component {
                                         alignItems: 'center', justifyContent: 'center'
                                     }}>
                                     <Icon name='check' color='#6c56b7' size={20} />
-                                    <Text style={{ color: '#6c56b7', fontWeight: 'bold', marginLeft: 10 }}>Ya tengo cuenta</Text>
-                            </TouchableOpacity>
-                            <Text>TOKEN: {this.props.navigation.state.params.token}</Text> 
+                                    <Text style={{ color: '#6c56b7', fontWeight: 'bold', marginLeft: 10 }}>No tengo cuenta, registrarme</Text>
+                            </TouchableOpacity> 
 
                         </Animated.View>
                     </View>

@@ -12,127 +12,120 @@ import {
     Image,
     TouchableOpacity,
     StatusBar,
-    AsyncStorage,
+    DeviceEventEmitter,
+    FlatList,
+    AppState,
 } from 'react-native';
 import IconMaterial from 'react-native-vector-icons/MaterialCommunityIcons';
 // import realm from '../bdrealm/realm'
-import FCMModule  from '../NativeModules/FCMModule'
-import { asyncFetch,fetchNode } from '../utils/fetchData'
+import FCMModule from '../NativeModules/FCMModule'
+import { asyncFetch, fetchNode } from '../utils/fetchData'
+import RealmModule from '../NativeModules/RealmModule'
+import ChatMessage from '../components/ChatMessage'
+import SocketIOClient from 'socket.io-client';
 export default class Home extends Component {
-    static navigationOptions = {
-        header: null,
-        tabBarLabel: 'Splash',
+
+    static navigationOptions = ({ navigation }) => {
+        return {
+            title: "@" + navigation.state.params.mi_usuario,
+            headerTintColor: 'white',
+            headerStyle: {
+                backgroundColor: '#7e5682'
+            },
+        };
     };
     constructor() {
         super()
         console.ignoredYellowBox = [
             'Setting a timer'
         ];
+        if (!global.socket || global.socket.disconnected){
+            global.socket = SocketIOClient('https://que5node.herokuapp.com');//http://192.168.1.6:8080 //https://que5node.herokuapp.com/
+            global.socket.emit('online', global.username)
+        }
         global.currentScreen = 'Home'
         this.state = {
             pagina: 'home',
-            chats: realm.objects('Chats').sorted('timestamp', true),
-            usuario_propietario:global.username
+            chats: [],
+            usuario_propietario: global.username,
+            appState: AppState.currentState
         }
-        
-    }
-    componentWillMount() {
-        console.log('Mi token',FCMModule.TOKEN)
-        // realm.write(() => {
-        //     let allBooks = realm.objects('Chats');
-        //     realm.delete(allBooks); // Deletes all books
-        //     let chatsss = realm.objects('ChatList');
-        //     realm.delete(chatsss); // Deletes all books
-        //   });
-    }
-    componentWillUnmount(){
-        //realm.removeAllListeners('change')
-        let fecha =  new Date()
-        //'yyyy-mm-dd HH:mm:ss'
-        var mes = fecha.getMonth()+1
-        var dia = fecha.getDate()
-        var hora = fecha.getHours()
-        var minutos = fecha.getMinutes()
-        let fechaFormat = fecha.getFullYear()+'-'+(mes>9?mes:'0'+mes)+'-'+(dia>9?dia:'0'+dia)+' '+(hora>9?hora:'0'+hora)+':'+(minutos>9?minutos:'0'+minutos)+':00'
-        console.log(global.username,fechaFormat)
-        asyncFetch('/ws/set_last_connected', 'POST', { usuario: global.username,fecha:new Date() }, (res) => {
-
+        this.messagedReceivedListener = DeviceEventEmitter.addListener('messagedReceived', (data) => {
+            this.actualizarChats()
+        })
+        global.socket.on('disconnect',(reason)=>{
+            global.socket = SocketIOClient('https://que5node.herokuapp.com');//http://192.168.1.6:8080 //https://que5node.herokuapp.com/
+            global.socket.emit('online', global.username)
         })
     }
-    // recuperarNroMensajes=(id_e)=>{
-    //     let mensajes = realm.objects('ChatList').filtered('estado_mensaje=="entregado" AND id_e="'+id_e+'"')
-    //     return mensajes.length
-    // }
-    componentDidMount(){
-        // realm.addListener('change', () => {
-        //     console.log('entro aqui')
-        //     this.setState({
-        //         chats: realm.objects('Chats').sorted('timestamp', true),
-        //     })
-        // });
-        
+    componentWillMount() {
+        FCMModule.cancelAllLocalNotifications()
+        this.actualizarChats()
     }
+    componentDidMount() {
+        AppState.addEventListener('change', this._handleAppStateChange);
+    }
+    actualizarChats = () => {
+        RealmModule.getChats({}, (chats) => {
+            this.setState({ chats })
+        }, (err) => [])
+    }
+    componentWillUnmount() {
+        this.desconectarUsuario()
+        // this.messagedReceivedListener.remove()
+        AppState.removeEventListener('change', this._handleAppStateChange);
+    }
+    desconectarUsuario = () => {
+        asyncFetch('/ws/set_last_connected', 'POST', { usuario: global.username, fecha: new Date() })
+        global.socket.disconnect()
+    }
+    _handleAppStateChange = (nextAppState) => {
+        if (this.state.appState.match(/inactive|background/) && nextAppState === 'active') {
+            console.log('App has come to the foreground!')
+            this.actualizarChats()
+            
+            if (!global.socket || global.socket.disconnected){
+                global.socket = SocketIOClient('https://que5node.herokuapp.com');//http://192.168.1.6:8080 //https://que5node.herokuapp.com/
+                global.socket.emit('online', global.username)
+            }
+        }
+        if (nextAppState == 'background') {
+            this.desconectarUsuario()
+            global.socket.disconnect()
+        }
+        console.log(nextAppState)
+        this.setState({ appState: nextAppState });
+    }
+    _keyExtractor = (item, index) => item.id_mensaje;
     render() {
         const { navigate } = this.props.navigation;
-        const { usuario_propietario } = this.state
-        const name_icon = (estado) => {
-            if (estado == "pendiente")
-                return "clock-outline"
-            else if (estado == "enviado")
-                return "check"
-            else
-                return "check-all"
-        }
+        const { usuario_propietario, chats } = this.state
+
         return (
             <View style={styles.container}>
                 <StatusBar
-                    backgroundColor="#008577"
+                    backgroundColor="#604263"
                     barStyle="light-content"
                 />
-                <View style={{
+                {/* <View style={{
                     flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16,
-                    height: 50, backgroundColor: '#00A896', marginBottom: 10, justifyContent: 'center'
+                    height: 50, backgroundColor: '#7E5682', marginBottom: 10, justifyContent: 'center'
                 }}>
                     <Image source={require('../img/Slit.png')} resizeMode="stretch" style={{ height: 40, width: 50 }} />
 
-                </View>
+                </View> */}
                 {this.state.pagina == 'home' && <View style={styles.contenido}>
 
                     <TouchableOpacity onPress={() => navigate('amigos')} activeOpacity={0.7}
-                        style={{ paddingVertical: 5, paddingHorizontal: 10, borderRadius: 5, backgroundColor: '#00A896', flexDirection: 'row', alignItems: 'center' }}>
-                        <Text style={{ color: '#F0F3BD', flex: 1, fontWeight: 'bold' }}>Nuevo Mensaje</Text>
-                        <IconMaterial name="chevron-right" size={35} color="#F0F3BD" />
+                        style={{ paddingVertical: 5, paddingHorizontal: 10, borderRadius: 5, backgroundColor: '#7E5682', flexDirection: 'row', alignItems: 'center' }}>
+                        <Text style={{ color: '#FFF', flex: 1, fontWeight: 'bold' }}>Nuevo Mensaje</Text>
+                        <IconMaterial name="chevron-right" size={35} color="#FFF" />
                     </TouchableOpacity>
-                    <View style={{ marginVertical: 20 }}>
-                        {this.state.chats.map(c =>
-                            <TouchableOpacity key={c.id_r} onPress={() => navigate('chat', { usuario: c.id_chat,usuario_propietario:this.state.usuario_propietario })}
-                                activeOpacity={0.6} style={{ paddingVertical: 10 }}>
-                                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                    <Image source={require('../img/avatar_1.jpg')} style={{ height: 50, width: 50, borderRadius: 25, marginRight: 20 }} />
-                                    <View style={{ flex: 1 }}>
-                                        <Text style={{ color: '#6B6B6B', fontWeight: 'bold' }}>{c.id_chat}</Text>
-                                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                        {c.id_r != usuario_propietario &&<IconMaterial size={15} color={(c.estado_mensaje == "visto"||c.estado_mensaje == "visto_fin") ? "#70CDEB" : "#6B6B6B"} name={name_icon(c.estado_mensaje)} />}
-                                        <Text style={{ color: (c.id_r == usuario_propietario && (c.estado_mensaje!='visto' && c.estado_mensaje!='visto_fin')) ? '#028090' : '#6B6B6B',marginHorizontal:5 }}>{c.ultimo_mensaje}</Text>
-                                        </View>
-                                    </View>
-                                    {(c.id_r == usuario_propietario && (c.estado_mensaje!='visto' && c.estado_mensaje!='visto_fin')) && <View style={{ height:20,width:20, borderRadius: 10,justifyContent:'center', backgroundColor: '#02C39A', alignItems: 'center' }}>
-                                        <Text style={{ color: '#FFF',padding:2 }}>{this.recuperarNroMensajes(c.id_chat)}</Text>
-                                    </View>}
-
-                                </View>
-                                <View style={{ height: 1, backgroundColor: '#E8E8E8', marginLeft: 50, marginTop: 5 }} />
-                            </TouchableOpacity>
-                        )}
-
-                        {/* <TouchableOpacity activeOpacity={0.6} style={{ paddingVertical: 10 }}>
-                            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                <Image source={require('../img/avatar_2.jpg')} style={{ height: 50, width: 50, borderRadius: 25, marginRight: 20 }} />
-                                <Text style={{ flex: 1, color: '#A4A4A4' }}>@mariano_123</Text>
-                            </View>
-                            <View style={{ height: 1, backgroundColor: '#E8E8E8', marginLeft: 50, marginTop: 5 }} />
-                        </TouchableOpacity> */}
-                    </View>
+                    <FlatList
+                        data={chats}
+                        keyExtractor={this._keyExtractor}
+                        renderItem={({ item }) => (<ChatMessage navigation={this.props.navigation} message={item} mi_usuario={usuario_propietario} />)}
+                    />
 
                 </View>}
                 {this.state.pagina == 'friends' && <View style={styles.contenido}>
@@ -164,23 +157,23 @@ export default class Home extends Component {
                     </View>
 
                 </View>}
-                <View style={styles.bottomNav}>
+                {/* <View style={styles.bottomNav}>
                     <View style={{ borderTopColor: '#7E5682', borderTopWidth: 1, borderTopColor: '#E8E8E8', paddingVertical: 5, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: 10, marginBottom: 10 }}>
-                        {/* <Image source={require('../img/Que5.png')} resizeMode="stretch" style={{ height: 50, width: 120, marginRight: 30 }} /> */}
+                        
                         <TouchableOpacity style={{ alignItems: 'center', flex: 1 }} onPress={() => this.setState({ pagina: 'home' })}>
-                            <IconMaterial name="home" size={35} color={this.state.pagina == 'home' ? "#02C39A" : "#D9D9D9"} />
-                            <Text style={{ color: this.state.pagina == 'home' ? "#02C39A" : "#AFAEAE", fontSize: 10 }}>Inicio</Text>
+                            <IconMaterial name="home" size={35} color={this.state.pagina == 'home' ? "#7E5682" : "#D9D9D9"} />
+                            <Text style={{ color: this.state.pagina == 'home' ? "#7E5682" : "#AFAEAE", fontSize: 10 }}>Inicio</Text>
                         </TouchableOpacity>
                         <TouchableOpacity style={{ alignItems: 'center', flex: 1 }} onPress={() => this.setState({ pagina: 'friends' })}>
-                            <IconMaterial name="checkbox-multiple-blank-circle-outline" size={35} color={this.state.pagina == 'friends' ? "#02C39A" : "#AFAEAE"} />
-                            <Text style={{ color: this.state.pagina == 'friends' ? "#02C39A" : "#AFAEAE", fontSize: 10 }} >Preguntas</Text>
+                            <IconMaterial name="checkbox-multiple-blank-circle-outline" size={35} color={this.state.pagina == 'friends' ? "#7E5682" : "#AFAEAE"} />
+                            <Text style={{ color: this.state.pagina == 'friends' ? "#7E5682" : "#AFAEAE", fontSize: 10 }} >Preguntas</Text>
                         </TouchableOpacity>
                         <TouchableOpacity style={{ alignItems: 'center', flex: 1 }}>
                             <IconMaterial name="account" size={35} color="#AFAEAE" />
-                            <Text style={{ color: this.state.pagina == 'profile' ? "#02C39A" : "#AFAEAE", fontSize: 10 }}>Perfil</Text>
+                            <Text style={{ color: this.state.pagina == 'profile' ? "#7E5682" : "#AFAEAE", fontSize: 10 }}>Perfil</Text>
                         </TouchableOpacity>
                     </View>
-                </View>
+                </View> */}
 
             </View>
         );
