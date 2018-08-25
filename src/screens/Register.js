@@ -204,7 +204,7 @@ export default class Register extends Component {
                                     <Icon name='check' color='#6c56b7' size={20} />
                                     <Text style={{ color: '#6c56b7', fontWeight: 'bold', marginLeft: 10 }}>Ya tengo cuenta</Text>
                             </TouchableOpacity>
-                            <Text>TOKEN: {this.props.navigation.state.params.token}</Text> 
+                            {/* <Text>TOKEN: {this.props.navigation.state.params.token}</Text>  */}
 
                         </Animated.View>
                     </View>

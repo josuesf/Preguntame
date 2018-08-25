@@ -22,19 +22,33 @@ export default class Message extends Component {
             timestamp: props.message.timestamp,
             estado_mensaje: props.message.estado_mensaje,
             tipo_mensaje: props.message.tipo_mensaje,
+            seleccionado: false
         }
-        if(props.estado_mensaje!='visto'){
-            this.statusListener = DeviceEventEmitter.addListener("changeStatus_"+this.state.id_mensaje,this.changeStatus) 
+        if (props.estado_mensaje != 'visto') {
+            this.statusListener = DeviceEventEmitter.addListener("changeStatus_" + this.state.id_mensaje, this.changeStatus)
         }
     }
-    changeStatus=(estado_mensaje)=>{
-        this.setState({estado_mensaje})
-        if(estado_mensaje=="visto"){
+    changeStatus = (estado_mensaje) => {
+        this.setState({ estado_mensaje })
+        if (estado_mensaje == "visto") {
             this.statusListener.remove()
         }
     }
-    componentWillUnmount(){
+    componentWillUnmount() {
         this.statusListener.remove()
+    }
+    Seleccionar = (message) => {
+        if (this.props.modo_seleccion != true) {
+            this.setState({ seleccionado: true })
+            this.props.Seleccion({
+                usuario: this.state.id_e,
+                mensaje: this.state.mensaje
+            })
+        }
+    }
+    QuitarSeleccion = () => {
+        this.props.QuitarSeleccion()
+        this.setState({ seleccionado: false })
     }
     render() {
         const Hora = (date) => {
@@ -52,33 +66,45 @@ export default class Message extends Component {
                 return "check-all"
         }
         return (
-            this.state.id_e == this.props.mi_usuario ?
-                <View key={this.state.id_mensaje} style={{ flexDirection: 'row', alignItems: 'center' }}>
-                    <View style={{ flex: 1 }} />
-                    <View style={{
-                        padding: 10, backgroundColor: '#F0F3BD', borderRadius: 10, 
-                        marginBottom: 5, marginLeft: 80, marginRight: 5,flexDirection:this.state.mensaje.length<30?'row':'column'}}>
-                        <Text style={{ color: '#6B6B6B', fontSize: 15, paddingRight: 5 }}>{this.state.mensaje}</Text>
-                        <View style={{ flexDirection: 'row', marginLeft: 5, alignItems: 'center', alignSelf: 'flex-end' }}>
-                            <Text style={{ color: '#6B6B6B', fontSize: 11, marginRight: 2, }}>{Hora(this.state.timestamp)}</Text>                            
-                            <IconMaterial size={15} 
-                                color={(this.state.estado_mensaje == "visto" || 
-                                        this.state.estado_mensaje == "visto_fin") 
-                                        ? "#70CDEB" : "#6B6B6B"} 
-                                name={name_icon(this.state.estado_mensaje)} />
+            <View style={{ flex: 1, marginBottom: 10 }}>
+                {this.state.id_e == this.props.mi_usuario ?
+                    <TouchableOpacity activeOpacity={0.7} onPress={this.QuitarSeleccion} onLongPress={() => this.Seleccionar()}
+                        key={this.state.id_mensaje} style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: this.state.seleccionado ? 'rgba(179, 229, 252,0.6)' : 'transparent' }}>
+                        <View style={{ flex: 1 }} >
+
                         </View>
-                    </View>
-                </View> :
-                <View key={this.state.id_mensaje} style={{ flexDirection: 'row', alignItems: 'center' }}>
-                    <View style={{ padding: 10, backgroundColor: '#FFF', borderRadius: 10, marginBottom: 5,
-                            marginRight: 80, marginLeft: 5,flexDirection:this.state.mensaje.length<30?'row':'column' }}>
-                        <Text style={{ color: '#6B6B6B', fontSize: 15 }}>{this.state.mensaje}</Text>
-                        <View style={{ flexDirection: 'row', marginLeft: 5, alignItems: 'center', alignSelf: 'flex-end' }}>
-                            <Text style={{ color: '#6B6B6B', fontSize: 11, marginRight: 2 }}>{Hora(this.state.timestamp)}</Text>
+
+                        <View style={{
+                            padding: 10,
+                            backgroundColor: this.state.seleccionado ? 'rgba(179, 229, 252,0.6)' : '#F0F3BD',
+                            borderRadius: 10, marginLeft: 80, marginRight: 5, flexDirection: this.state.mensaje.length < 30 ? 'row' : 'column'
+                        }}>
+                            <Text style={{ color: '#6B6B6B', fontSize: 15, paddingRight: 5 }}>{this.state.mensaje}</Text>
+                            <View style={{ flexDirection: 'row', marginLeft: 5, alignItems: 'center', alignSelf: 'flex-end' }}>
+                                <Text style={{ color: '#6B6B6B', fontSize: 11, marginRight: 2, }}>{Hora(this.state.timestamp)}</Text>
+                                <IconMaterial size={15}
+                                    color={(this.state.estado_mensaje == "visto" ||
+                                        this.state.estado_mensaje == "visto_fin")
+                                        ? "#70CDEB" : "#6B6B6B"}
+                                    name={name_icon(this.state.estado_mensaje)} />
+                            </View>
                         </View>
-                    </View>
-                    <View style={{ flex: 1 }} />
-                </View>
+
+                    </TouchableOpacity> :
+                    <TouchableOpacity key={this.state.id_mensaje} style={{ flexDirection: 'row', alignItems: 'center' }}>
+                        <View style={{
+                            padding: 10, backgroundColor: '#FFF', borderRadius: 10,
+                            marginRight: 80, marginLeft: 5, flexDirection: this.state.mensaje.length < 30 ? 'row' : 'column'
+                        }}>
+                            <Text style={{ color: '#6B6B6B', fontSize: 15 }}>{this.state.mensaje}</Text>
+                            <View style={{ flexDirection: 'row', marginLeft: 5, alignItems: 'center', alignSelf: 'flex-end' }}>
+                                <Text style={{ color: '#6B6B6B', fontSize: 11, marginRight: 2 }}>{Hora(this.state.timestamp)}</Text>
+                            </View>
+                        </View>
+                        <View style={{ flex: 1 }} />
+                    </TouchableOpacity>}
+
+            </View>
         );
 
     }

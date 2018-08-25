@@ -47,9 +47,10 @@ export default class Chat extends Component {
             estado_usuario: '',
             mensaje: "",
             appState: AppState.currentState,
-            pagina: 1,
+            pagina: 15,
             nroMensajes: 15,
-            cargando_mensaje: true
+            cargando_mensaje: true,
+            modo_seleccion: false
         }
         global.currentScreen = 'Chat#' + props.navigation.state.params.usuario
         global.socket.off('escribiendo')
@@ -63,7 +64,7 @@ export default class Chat extends Component {
     }
     componentDidMount() {
         global.socket.on('escribiendo', (data) => {
-            console.log(data)
+            console.log(data.id_e, this.state.chat_con)
             if (data.id_e == this.state.chat_con) {
                 this.setState({ estado_usuario: 'escribiendo...' })
                 setTimeout(() => {
@@ -129,8 +130,9 @@ export default class Chat extends Component {
         // console.log(chat_con)
         RealmModule.getMessagesbyUser({ id_chat: chat_con }, (mensajes) => {
             //.slice(0, 10),
-            // console.log(mensajes)
-            this.setState({ mensajes: mensajes.slice(0, 15), cargando_mensaje: false })
+            // console.log(mensajes): mensajes.slice(0, 15)
+
+            this.setState({ mensajes, cargando_mensaje: false })
         }, (err) => { console.log(err) })
     }
     escribirMensaje = (text) => {
@@ -158,10 +160,12 @@ export default class Chat extends Component {
             }
             console.log(new_message)
             RealmModule.saveMessage(new_message, (message) => { this.ActualizarMensajes() }, (err) => alert(err))
-            this.setState({ mensaje: "" })
+            this.setState({ mensaje: "", no_hay_mensajes: false, pagina: 15 })
             //this.EnviarMensajesGuardados()
             //this.EnviarMensajesGuardados()
             //global.socket.emit('new_message', new_message)
+        } else {
+            this.setState({ respuestaMensaje: true })
         }
     }
     EnviarMensajesGuardados() {
@@ -173,27 +177,40 @@ export default class Chat extends Component {
     }
 
     _keyExtractor = (item, index) => item.id_mensaje;
-    onScrollHandler = () => {
-        const { chat_con, pagina, nroMensajes, no_hay_mensajes } = this.state
+    // onScrollHandler = () => {
+    //     const { chat_con, pagina, nroMensajes, no_hay_mensajes } = this.state
 
-        if (!no_hay_mensajes) {
-            this.setState({ cargando_mensaje: true })
-            // console.log(chat_con)
+    //     if (!no_hay_mensajes) {
+    //         this.setState({ cargando_mensaje: true })
+    //         // console.log(chat_con)
 
-            RealmModule.getMessagesbyUser({ id_chat: chat_con }, (mensajes) => {
-                //.slice(0, 10),
-                // console.log(mensajes)
-                if (mensajes.length > 0) {
-                    this.setState({
-                        mensajes: this.state.mensajes.concat(mensajes.slice(pagina, (pagina + 1) * nroMensajes)),
-                        pagina: pagina + 1,
-                        cargando_mensaje: false
-                    })
-                } else {
-                    this.setState({ no_hay_mensajes: true, cargando_mensaje: false })
-                }
-            }, (err) => { console.log(err) })
-        }
+    //         RealmModule.getMessagesbyUser({ id_chat: chat_con }, (mensajes) => {
+    //             //.slice(0, 10),
+    //             console.log(pagina,pagina+nroMensajes,mensajes.length,mensajes.slice(pagina, pagina+nroMensajes))
+    //             mensajes = mensajes.slice(pagina, pagina+nroMensajes)
+    //             if (mensajes.length > 0) {
+    //                 console.log('guardando..')
+    //                 this.setState({
+    //                     mensajes: this.state.mensajes.concat(mensajes),
+    //                     pagina: pagina + nroMensajes,
+    //                     cargando_mensaje: false
+    //                 })
+    //             } else {
+    //                 console.log('entro aqo')
+    //                 this.setState({ no_hay_mensajes: true, cargando_mensaje: false })
+    //             }
+    //         }, (err) => { console.log(err) })
+    //     }
+    // }
+    Seleccion = (data) => {
+       
+        this.setState({ 
+            modo_seleccion: true,
+            messageReply:{
+                usuario:data.usuario,
+                mensaje:data.mensaje
+            }
+        })
     }
     render() {
         const { navigate, goBack } = this.props.navigation;
@@ -212,10 +229,17 @@ export default class Chat extends Component {
                         <TouchableOpacity onPress={() => goBack()} style={{ alignItems: 'center', marginRight: 20 }}>
                             <IconMaterial name="arrow-left" size={25} color="#FFF" />
                         </TouchableOpacity>
-                        <View>
-                            <Text style={{ color: '#FFF', fontSize: 16, fontWeight: 'bold' }}>Preguntas con {this.state.chat_con}</Text>
-                            {this.state.estado_usuario != "" && <Text style={{ color: '#FFF', fontSize: 12 }}>{this.state.estado_usuario}</Text>}
-                        </View>
+                        {this.state.modo_seleccion && <View style={{flex:1}}/>}
+                        {this.state.modo_seleccion ? <View>
+                            <TouchableOpacity onPress={() => this.setState({respuestaMensaje:true})} style={{ alignItems: 'center', marginRight: 10 }}>
+                                <IconMaterial name="reply" size={25} color="#FFF" />
+                            </TouchableOpacity>
+                        </View> :
+                            <View>
+                                <Text style={{ color: '#FFF', fontSize: 16, fontWeight: 'bold' }}>Preguntas con {this.state.chat_con}</Text>
+                                {this.state.estado_usuario != "" && <Text style={{ color: '#FFF', fontSize: 12 }}>{this.state.estado_usuario}</Text>}
+                            </View>
+                        }
                     </View>
 
                 </View>
@@ -223,15 +247,36 @@ export default class Chat extends Component {
                 <FlatList
                     data={mensajes}
                     keyExtractor={this._keyExtractor}
-                    renderItem={({ item }) => (<Message message={item} mi_usuario={id_usuario} />)}
+                    renderItem={({ item }) => (<Message message={item} 
+                                mi_usuario={id_usuario} 
+                                Seleccion={this.Seleccion} 
+                                modo_seleccion={this.state.modo_seleccion}
+                                QuitarSeleccion={()=>this.setState({modo_seleccion:false})} />)}
                     inverted
-                    onEndReached={this.onScrollHandler}
-                    onEndThreshold={20}
+                    // onEndReached={this.onScrollHandler}
+                    onEndThreshold={0}
                 />
 
-                <KeyboardAvoidingView behavior="height">
+                {/* <KeyboardAvoidingView behavior="height"> */}
 
-                    <View style={styles.footer}>
+                <View style={styles.footer}>
+                    <View style={{ flex: 1, backgroundColor: '#FFF', borderRadius: 20, marginVertical: 5, marginHorizontal: 5 }}>
+                        {this.state.respuestaMensaje &&
+                            <View style={{
+                                borderLeftWidth: 4, borderLeftColor: '#7e5682',
+                                margin: 5, backgroundColor: '#EEEEEE', borderRadius: 15, flexDirection: 'row'
+                            }}>
+                                <View style={{ padding: 10, flex: 1 }}>
+                                    <Text style={{ color: '#6B6B6B', fontWeight: 'bold', fontSize: 16, paddingRight: 5 }}>{this.state.messageReply.usuario}</Text>
+                                    <Text style={{ color: '#6B6B6B', fontSize: 14, paddingRight: 5 }}>{this.state.messageReply.mensaje}</Text>
+                                </View>
+                                <TouchableOpacity style={{ alignSelf: 'flex-start', padding: 5 }}
+                                    onPress={() => this.setState({ respuestaMensaje: false })}>
+                                    <IconMaterial name="close" color="#6B6B6B" />
+                                </TouchableOpacity>
+                            </View>
+                        }
+
                         <TextInput
                             multiline={true}
                             value={this.state.mensaje}
@@ -240,11 +285,14 @@ export default class Chat extends Component {
                             placeholder="Escribe tu mensaje"
                             onChangeText={(text) => this.escribirMensaje(text)}
                         />
-                        <TouchableOpacity onPress={() => this.EnviarMensaje()}>
-                            <Text style={styles.send}>Enviar</Text>
-                        </TouchableOpacity>
                     </View>
-                </KeyboardAvoidingView>
+
+                    <TouchableOpacity style={{ alignSelf: 'flex-end', backgroundColor: '#604263', borderRadius: 28, margin: 2 }} onPress={() => this.EnviarMensaje()}>
+                        <IconMaterial name="send" size={30} color="#FFF" style={{ padding: 10, alignSelf: 'center', marginLeft: 1 }} />
+
+                    </TouchableOpacity>
+                </View>
+                {/* </KeyboardAvoidingView> */}
             </View>
         );
     }
@@ -271,12 +319,13 @@ const styles = StyleSheet.create({
     },
     footer: {
         flexDirection: 'row',
-        backgroundColor: '#FCFCFC'
+        backgroundColor: '#EEEEEE',
+        alignItems: 'center'
     },
     input: {
         paddingHorizontal: 20,
         fontSize: 18,
-        flex: 1,
+
     },
     send: {
         alignSelf: 'center',
