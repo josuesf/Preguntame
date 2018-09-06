@@ -25,7 +25,7 @@ class Main extends Component {
 
     headerTintColor: 'white',
     headerStyle: {
-      backgroundColor: '#7e5682'
+      backgroundColor: '#46494C'
     },
   };
   componentWillMount() {
@@ -40,7 +40,18 @@ class Main extends Component {
         global.username = JSON.parse(res).usuario
         
         this.props.navigation.replace('home',{mi_usuario:global.username})
-      } else {
+      } 
+      // if (res == null || res == undefined) {
+      //   RealmModule.setUser({
+      //     username: "josuesf10",
+      //     email: "josuesf94@gmail.com",
+      //     token_fcm: "dasdasdasdasd4323423"
+      //   }, (respuesta) => console.log(respuesta), (err) => console.log(err))
+      //   global.username = "josuesf10"
+        
+      //   this.props.navigation.replace('home',{mi_usuario:global.username})
+      // } 
+      else {
         this.intervalToken = setInterval(() => {
           FCMModule.getToken((token) => {
             if (token != undefined && token != null) {
@@ -61,7 +72,7 @@ class Main extends Component {
     return (
       <View style={styles.container}>
         <StatusBar
-          backgroundColor="#604263"
+          backgroundColor="#3A3C3F"
           barStyle="light-content"
         />
         <ActivityIndicator color="white" size="large" />
@@ -118,7 +129,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#7e5682',
+    backgroundColor: '#46494C',
   },
   welcome: {
     fontSize: 20,

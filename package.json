@@ -12,7 +12,8 @@
     "react-native": "0.51.0",
     "react-native-vector-icons": "^5.0.0",
     "react-navigation": "^2.10.0",
-    "socket.io": "^1.7.2"
+    "socket.io": "^1.7.2",
+    "react-native-simple-dialogs": "^0.3.1"
   },
   "devDependencies": {
     "babel-jest": "23.4.2",

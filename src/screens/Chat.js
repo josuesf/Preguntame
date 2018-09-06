@@ -27,14 +27,22 @@ import Message from '../components/Message'
 
 
 export default class Chat extends Component {
-    static navigationOptions = {
-        title: "@usuario",
-        headerTintColor: 'white',
-        headerStyle: {
-            backgroundColor: '#7e5682'
-        },
-        header: null
-    };
+    static navigationOptions = ({ navigation }) => {
+        const params = navigation.state.params || {};
+        return {
+            title: params.usuario.toUpperCase(),
+            headerTintColor: '#FFF',
+            headerStyle: {
+                backgroundColor: '#46494C',
+            },
+            // headerRight: (
+            //     store.getState().tipo_usuario == 'EMPLEADO' &&
+            //     <TouchableOpacity onPress={params.guardar} style={{ paddingHorizontal: 10 }}>
+            //         <Text style={{ color: '#FFF', fontWeight: 'bold' }}>Guardar</Text>
+            //     </TouchableOpacity>
+            // ),
+        }
+    }
     constructor(props) {
         super(props)
         console.ignoredYellowBox = [
@@ -177,31 +185,7 @@ export default class Chat extends Component {
     }
 
     _keyExtractor = (item, index) => item.id_mensaje;
-    // onScrollHandler = () => {
-    //     const { chat_con, pagina, nroMensajes, no_hay_mensajes } = this.state
 
-    //     if (!no_hay_mensajes) {
-    //         this.setState({ cargando_mensaje: true })
-    //         // console.log(chat_con)
-
-    //         RealmModule.getMessagesbyUser({ id_chat: chat_con }, (mensajes) => {
-    //             //.slice(0, 10),
-    //             console.log(pagina,pagina+nroMensajes,mensajes.length,mensajes.slice(pagina, pagina+nroMensajes))
-    //             mensajes = mensajes.slice(pagina, pagina+nroMensajes)
-    //             if (mensajes.length > 0) {
-    //                 console.log('guardando..')
-    //                 this.setState({
-    //                     mensajes: this.state.mensajes.concat(mensajes),
-    //                     pagina: pagina + nroMensajes,
-    //                     cargando_mensaje: false
-    //                 })
-    //             } else {
-    //                 console.log('entro aqo')
-    //                 this.setState({ no_hay_mensajes: true, cargando_mensaje: false })
-    //             }
-    //         }, (err) => { console.log(err) })
-    //     }
-    // }
     Seleccion = (data) => {
        
         this.setState({ 
@@ -218,11 +202,11 @@ export default class Chat extends Component {
         return (
             <View style={styles.container}>
                 <StatusBar
-                    backgroundColor="#604263"
+                    backgroundColor="#3A3C3F"
                     barStyle="light-content"
                 />
-                <View style={{
-                    backgroundColor: '#7e5682',
+                {/* <View style={{
+                    backgroundColor: '#46494C',
                     paddingHorizontal: 16, paddingTop: 10, paddingBottom: 10, height: 60
                 }}>
                     <View style={{ flexDirection: 'row' }}>
@@ -236,13 +220,13 @@ export default class Chat extends Component {
                             </TouchableOpacity>
                         </View> :
                             <View>
-                                <Text style={{ color: '#FFF', fontSize: 16, fontWeight: 'bold' }}>Preguntas con {this.state.chat_con}</Text>
+                                <Text style={{ color: '#FFF', fontSize: 16, fontWeight: 'bold' }}>{this.state.chat_con}</Text>
                                 {this.state.estado_usuario != "" && <Text style={{ color: '#FFF', fontSize: 12 }}>{this.state.estado_usuario}</Text>}
                             </View>
                         }
                     </View>
 
-                </View>
+                </View> */}
                 {this.state.cargando_mensaje && <ActivityIndicator size="large" color="#604263" style={{ paddingVertical: 5 }} />}
                 <FlatList
                     data={mensajes}
@@ -260,7 +244,7 @@ export default class Chat extends Component {
                 {/* <KeyboardAvoidingView behavior="height"> */}
 
                 <View style={styles.footer}>
-                    <View style={{ flex: 1, backgroundColor: '#FFF', borderRadius: 20, marginVertical: 5, marginHorizontal: 5 }}>
+                    <View style={{ flex: 1, backgroundColor: '#FFF' }}>
                         {this.state.respuestaMensaje &&
                             <View style={{
                                 borderLeftWidth: 4, borderLeftColor: '#7e5682',
@@ -282,14 +266,14 @@ export default class Chat extends Component {
                             value={this.state.mensaje}
                             style={styles.input}
                             underlineColorAndroid="transparent"
-                            placeholder="Escribe tu mensaje"
+                            placeholder="  ...  "
                             onChangeText={(text) => this.escribirMensaje(text)}
+                            selectionColor={"#1985A1"}
                         />
                     </View>
 
-                    <TouchableOpacity style={{ alignSelf: 'flex-end', backgroundColor: '#604263', borderRadius: 28, margin: 2 }} onPress={() => this.EnviarMensaje()}>
-                        <IconMaterial name="send" size={30} color="#FFF" style={{ padding: 10, alignSelf: 'center', marginLeft: 1 }} />
-
+                    <TouchableOpacity style={{  backgroundColor: '#1985A1',padding:10 }} onPress={() => this.EnviarMensaje()}>
+                        <Text style={{color:'#FFF',fontWeight:'bold',fontSize:18}}>ENVIAR</Text>
                     </TouchableOpacity>
                 </View>
                 {/* </KeyboardAvoidingView> */}
@@ -319,13 +303,13 @@ const styles = StyleSheet.create({
     },
     footer: {
         flexDirection: 'row',
-        backgroundColor: '#EEEEEE',
+        backgroundColor: '#1985A1',
         alignItems: 'center'
     },
     input: {
         paddingHorizontal: 20,
         fontSize: 18,
-
+        
     },
     send: {
         alignSelf: 'center',

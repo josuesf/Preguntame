@@ -68,30 +68,30 @@ export default class Message extends Component {
         return (
             <View style={{ flex: 1, marginBottom: 10 }}>
                 {this.state.id_e == this.props.mi_usuario ?
-                    <TouchableOpacity activeOpacity={0.7} onPress={this.QuitarSeleccion} onLongPress={() => this.Seleccionar()}
-                        key={this.state.id_mensaje} style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: this.state.seleccionado ? 'rgba(179, 229, 252,0.6)' : 'transparent' }}>
+                    <TouchableOpacity activeOpacity={0.8} //onPress={this.QuitarSeleccion} onLongPress={() => this.Seleccionar()}
+                        key={this.state.id_mensaje} style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: "transparent" }}>
                         <View style={{ flex: 1 }} >
 
                         </View>
 
                         <View style={{
                             padding: 10,
-                            backgroundColor: this.state.seleccionado ? 'rgba(179, 229, 252,0.6)' : '#F0F3BD',
+                            backgroundColor: '#C5C3C6',
                             borderRadius: 10, marginLeft: 80, marginRight: 5, flexDirection: this.state.mensaje.length < 30 ? 'row' : 'column'
                         }}>
                             <Text style={{ color: '#6B6B6B', fontSize: 15, paddingRight: 5 }}>{this.state.mensaje}</Text>
                             <View style={{ flexDirection: 'row', marginLeft: 5, alignItems: 'center', alignSelf: 'flex-end' }}>
                                 <Text style={{ color: '#6B6B6B', fontSize: 11, marginRight: 2, }}>{Hora(this.state.timestamp)}</Text>
-                                <IconMaterial size={15}
+                                {/* <IconMaterial size={15}
                                     color={(this.state.estado_mensaje == "visto" ||
                                         this.state.estado_mensaje == "visto_fin")
                                         ? "#70CDEB" : "#6B6B6B"}
-                                    name={name_icon(this.state.estado_mensaje)} />
+                                    name={name_icon(this.state.estado_mensaje)} /> */}
                             </View>
                         </View>
 
                     </TouchableOpacity> :
-                    <TouchableOpacity key={this.state.id_mensaje} style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <TouchableOpacity activeOpacity={0.8} key={this.state.id_mensaje} style={{ flexDirection: 'row', alignItems: 'center' }}>
                         <View style={{
                             padding: 10, backgroundColor: '#FFF', borderRadius: 10,
                             marginRight: 80, marginLeft: 5, flexDirection: this.state.mensaje.length < 30 ? 'row' : 'column'

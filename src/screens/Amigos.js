@@ -23,7 +23,7 @@ export default class Amigos extends Component {
         title: "Amigos",
         headerTintColor: 'white',
         headerStyle: {
-            backgroundColor: '#7e5682'
+            backgroundColor: '#46494C'
         }
     };
     constructor() {
@@ -55,7 +55,7 @@ export default class Amigos extends Component {
         return (
             <View style={styles.container}>
                 <StatusBar
-                    backgroundColor="#604263"
+                    backgroundColor="#3A3C3F"
                     barStyle="light-content"
                 />
                 <View style={styles.contenido}>
@@ -74,7 +74,7 @@ export default class Amigos extends Component {
                                 key={item.usuario} activeOpacity={0.6} style={{ paddingVertical: 10 }}>
                                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                                     <Image source={require('../img/avatar.png')} style={{ height: 50, width: 50, borderRadius: 25, marginRight: 20 }} />
-                                    <Text style={{ flex: 1, color: '#A4A4A4',fontWeight:"bold" }}>{item.usuario}</Text>
+                                    <Text style={{ flex: 1, color: '#A4A4A4',fontWeight:"bold" }}>{item.usuario.toUpperCase()}</Text>
                                 </View>
                                 <View style={{ height: 1, backgroundColor: '#E8E8E8', marginLeft: 50, marginTop: 5 }} />
                             </TouchableOpacity>
