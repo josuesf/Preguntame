@@ -16,7 +16,7 @@ export default class Register extends Component {
         title: 'Registrate',
         headerTintColor: 'white',
         headerStyle: {
-            backgroundColor: '#7e5682'
+            backgroundColor: '#46494C'
         },
     };
     
@@ -124,7 +124,7 @@ export default class Register extends Component {
     render() {
         return <View style={registerStyle.container}>
                 <StatusBar
-          backgroundColor="#7e5682"
+          backgroundColor="#3A3C3F"
           barStyle="light-content"
         />
                 <ScrollView keyboardShouldPersistTaps='handled' style={registerStyle.loginContainer}>
@@ -224,7 +224,7 @@ const registerStyle = StyleSheet.create({
     },
     loginContainer: {
         flex: 1,
-        backgroundColor: '#7e5682',
+        backgroundColor: '#46494C',
         
     },
     formContainer: {

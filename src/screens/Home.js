@@ -117,7 +117,7 @@ export default class Home extends Component {
                 {this.state.pagina == 'home' && <View style={styles.contenido}>
 
                     <TouchableOpacity onPress={() => navigate('amigos')} activeOpacity={0.7}
-                        style={{ paddingVertical: 5, paddingHorizontal: 10, borderRadius: 5, backgroundColor: '#1985A1', flexDirection: 'row', alignItems: 'center' }}>
+                        style={{ paddingVertical: 5, paddingHorizontal: 10, borderRadius: 5, backgroundColor: '#6c56b7', flexDirection: 'row', alignItems: 'center' }}>
                         <Text style={{ color: '#FFF', flex: 1, fontWeight: 'bold' }}>NUEVO MENSAJE</Text>
                         <IconMaterial name="plus" size={35} color="#FFF" />
                     </TouchableOpacity>

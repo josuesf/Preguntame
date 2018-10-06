@@ -66,7 +66,7 @@ export default class Chat extends Component {
     }
     componentWillMount() {
         this.EnviarMensajesGuardados()
-        this.EnviarMensajesVistos({ id_chat: this.props.navigation.state.params.usuario })
+        //this.EnviarMensajesVistos({ id_chat: this.props.navigation.state.params.usuario })
         this.ActualizarMensajes()
         this.recuperarUltimaHora()
     }
@@ -88,8 +88,8 @@ export default class Chat extends Component {
         console.log("nuevos mensajes")
         if (this.state.chat_con == newMessage.id_chat) {
             this.setState({ mensajes: [newMessage, ...this.state.mensajes] });
-            if (global.currentScreen == 'Chat#' + this.props.navigation.state.params.usuario)
-                this.EnviarMensajesVistos({ id_chat: this.props.navigation.state.params.usuario })
+            // if (global.currentScreen == 'Chat#' + this.props.navigation.state.params.usuario)
+                //this.EnviarMensajesVistos({ id_chat: this.props.navigation.state.params.usuario })
             this.EnviarMensajesGuardados()
         }
     }
@@ -122,7 +122,7 @@ export default class Chat extends Component {
         if (this.state.appState.match(/inactive|background/) && nextAppState === 'active') {
             console.log("Chat..." + 'App has come to the foreground!')
             this.EnviarMensajesGuardados()
-            this.EnviarMensajesVistos({ id_chat: this.props.navigation.state.params.usuario })
+            // this.EnviarMensajesVistos({ id_chat: this.props.navigation.state.params.usuario })
             this.ActualizarMensajes()
         }
         console.log("Chat..." + nextAppState)
@@ -132,6 +132,7 @@ export default class Chat extends Component {
         global.currentScreen = 'Home'
         clearInterval(this.intervalUltimavez)
         AppState.removeEventListener('change', this._handleAppStateChange);
+        this.EnviarMensajesVistos({ id_chat: this.props.navigation.state.params.usuario })
     }
     ActualizarMensajes = () => {
         const { chat_con } = this.state
@@ -172,9 +173,10 @@ export default class Chat extends Component {
             //this.EnviarMensajesGuardados()
             //this.EnviarMensajesGuardados()
             //global.socket.emit('new_message', new_message)
-        } else {
-            this.setState({ respuestaMensaje: true })
-        }
+        } 
+        // else {
+        //     this.setState({ respuestaMensaje: true })
+        // }
     }
     EnviarMensajesGuardados() {
         //RealmModule.sendPendientes({id_e:this.state.id_usuario})
@@ -272,7 +274,7 @@ export default class Chat extends Component {
                         />
                     </View>
 
-                    <TouchableOpacity style={{  backgroundColor: '#1985A1',padding:10 }} onPress={() => this.EnviarMensaje()}>
+                    <TouchableOpacity style={{  backgroundColor: '#6c56b7',padding:10 }} onPress={() => this.EnviarMensaje()}>
                         <Text style={{color:'#FFF',fontWeight:'bold',fontSize:18}}>ENVIAR</Text>
                     </TouchableOpacity>
                 </View>
@@ -303,7 +305,7 @@ const styles = StyleSheet.create({
     },
     footer: {
         flexDirection: 'row',
-        backgroundColor: '#1985A1',
+        backgroundColor: '#6c56b7',
         alignItems: 'center'
     },
     input: {

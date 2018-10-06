@@ -192,19 +192,44 @@ public class RealmModule extends ReactContextBaseJavaModule {
                 .and()
                 .notEqualTo("estado_mensaje","visto")
                 .findAll();
+        for (final ChatList c:chatLists) {
+            realm.executeTransaction(new Realm.Transaction() {
+                @Override
+                public void execute(Realm realm) {
+                    c.deleteFromRealm();
+                }
+            });
 
-        for (ChatList c:chatLists) {
-            updateStatusMessage(c.getId_mensaje(), "visto");
-            //Enviar Respuesta al servidor
-            JSONObject msj = new JSONObject();
-            try {
-                msj.put("id_mensaje", c.getId_mensaje());
-                msj.put("estado_mensaje", "visto");
-                ActualizarServidor(msj);
-            } catch (JSONException e) {
-                e.printStackTrace();
-            }
         }
+        RealmResults<ChatList> chatListsPendientes= realm.where(ChatList.class)
+                .sort("timestamp")
+                .notEqualTo("id_e",query.getString("id_chat"))
+                .and()
+                .notEqualTo("estado_mensaje","pendiente")
+                .findAll();
+        for (final ChatList c:chatListsPendientes) {
+            realm.executeTransaction(new Realm.Transaction() {
+                @Override
+                public void execute(Realm realm) {
+                    c.deleteFromRealm();
+                }
+            });
+
+        }
+
+
+//        for (ChatList c:chatLists) {
+//            updateStatusMessage(c.getId_mensaje(), "visto");
+//            //Enviar Respuesta al servidor
+//            JSONObject msj = new JSONObject();
+//            try {
+//                msj.put("id_mensaje", c.getId_mensaje());
+//                msj.put("estado_mensaje", "visto");
+//                ActualizarServidor(msj);
+//            } catch (JSONException e) {
+//                e.printStackTrace();
+//            }
+//        }
 
     }
     @ReactMethod

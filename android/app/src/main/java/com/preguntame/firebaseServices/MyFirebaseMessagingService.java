@@ -96,8 +96,8 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService{
                                                         .sort("id_chat")
                                                         .findAll();
         String bigText = "";
-        String mensaje = data.get("mensaje");
-        String titulo = data.get("id_e");
+        String mensaje = "Tienes un nuevo mensaje";//data.get("mensaje");
+        String titulo = "Preguntame";//data.get("id_e");
         if(mensajesPendientes.size()>1){
             mensaje="Tienes "+mensajesPendientes.size()+" mensaje(s).";
             titulo = "Preguntame";
@@ -119,7 +119,7 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService{
                 .setContentText(mensaje)
                 .setContentIntent(pIntent)
                 .setAutoCancel(true)
-                .setStyle(new NotificationCompat.BigTextStyle().bigText(bigText))
+                //.setStyle(new NotificationCompat.BigTextStyle().bigText(bigText))
                 .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
                 .setVibrate(new long[]{ 350, 350,350,350,350})
                 .setLights(0xff00ff00, 300, 100)
@@ -169,14 +169,14 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService{
                 }
             }
             //Enviar Respuesta al servidor
-            JSONObject msj = new JSONObject();
+            /*JSONObject msj = new JSONObject();
             try {
                 msj.put("id_mensaje", id_mensaje);
                 msj.put("estado_mensaje", "entregado");
                 ActualizarServidor(msj);
             } catch (JSONException e) {
                 e.printStackTrace();
-            }
+            }*/
         }
 
     }
@@ -184,6 +184,15 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService{
         final String id_mensaje = data.get("id_mensaje");
         final String estado_mensaje = data.get("estado_mensaje");
         final ChatList chatList = realm.where(ChatList.class).equalTo("id_mensaje",id_mensaje).findFirst();
+        /*if(chatList!=null && estado_mensaje.equals("enviado")) {
+            realm.executeTransaction(new Realm.Transaction() {
+                @Override
+                public void execute(Realm realm) {
+                    chatList.deleteFromRealm();
+                }
+            });
+
+        }*/
         String estado_mensaje_actual =chatList.getEstado_mensaje();
         boolean cambio = false;
         switch (estado_mensaje_actual){
@@ -213,16 +222,16 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService{
                     chatList.setEstado_mensaje(estado_mensaje);
                 }
             });
-            if(isApplicationInForeground()){
-                if ( RealmModule.getmReactContext().hasActiveCatalystInstance()) {
-                    ChatList newChatSaved = realm.where(ChatList.class).equalTo("id_mensaje",id_mensaje).findFirst();
-                    if(newChatSaved!=null) {
-                        RealmModule.getmReactContext()
-                                .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
-                                .emit("changeStatus_"+id_mensaje, newChatSaved.getEstado_mensaje());
-                    }
-                }
-            }
+//            if(isApplicationInForeground()){
+//                if ( RealmModule.getmReactContext().hasActiveCatalystInstance()) {
+//                    ChatList newChatSaved = realm.where(ChatList.class).equalTo("id_mensaje",id_mensaje).findFirst();
+//                    if(newChatSaved!=null) {
+//                        RealmModule.getmReactContext()
+//                                .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
+//                                .emit("changeStatus_"+id_mensaje, newChatSaved.getEstado_mensaje());
+//                    }
+//                }
+//            }
         }
     }
     private void ActualizarServidor(JSONObject params){
